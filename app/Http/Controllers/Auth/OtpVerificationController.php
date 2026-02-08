@@ -69,6 +69,7 @@ class OtpVerificationController extends Controller
         Auth::guard('web')->login($user, $request->session()->get('otp_remember', false));
         $request->session()->forget('otp_remember');
         $request->session()->regenerate();
+        $request->session()->flash('success', __('Login Successful! Welcome to the School Event Management System.'));
 
         return redirect()->intended(route($user->dashboardRoute(), absolute: false));
     }
