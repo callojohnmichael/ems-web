@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,24 +16,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $defaults = [
+            'password' => Hash::make('password'),
+            'email_verified_at' => now(),
+        ];
 
-        User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'role' => User::ROLE_ADMIN,
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            array_merge($defaults, ['name' => 'Admin User', 'role' => User::ROLE_ADMIN])
+        );
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'user@example.com',
-            'role' => User::ROLE_USER,
-        ]);
+        User::updateOrCreate(
+            ['email' => 'user@example.com'],
+            array_merge($defaults, ['name' => 'Test User', 'role' => User::ROLE_USER])
+        );
 
-        User::factory()->create([
-            'name' => 'Multimedia Staff',
-            'email' => 'media@example.com',
-            'role' => User::ROLE_MULTIMEDIA_STAFF,
-        ]);
+        User::updateOrCreate(
+            ['email' => 'media@example.com'],
+            array_merge($defaults, ['name' => 'Multimedia Staff', 'role' => User::ROLE_MULTIMEDIA_STAFF])
+        );
     }
 }

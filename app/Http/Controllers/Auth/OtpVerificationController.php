@@ -70,7 +70,7 @@ class OtpVerificationController extends Controller
         $request->session()->forget('otp_remember');
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route($user->dashboardRoute(), absolute: false));
     }
 
     public function resend(Request $request): RedirectResponse

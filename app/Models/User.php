@@ -67,4 +67,16 @@ class User extends Authenticatable
     {
         return $this->role === self::ROLE_MULTIMEDIA_STAFF;
     }
+
+    /**
+     * Route name for this user's role-specific dashboard.
+     */
+    public function dashboardRoute(): string
+    {
+        return match ($this->role) {
+            self::ROLE_ADMIN => 'admin.dashboard',
+            self::ROLE_MULTIMEDIA_STAFF => 'media.dashboard',
+            default => 'user.dashboard',
+        };
+    }
 }

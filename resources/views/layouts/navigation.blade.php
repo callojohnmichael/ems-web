@@ -10,11 +10,26 @@
                     </a>
                 </div>
 
-                <!-- Navigation Links -->
+                <!-- Navigation Links (role-specific) -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    <x-nav-link :href="route(Auth::user()->dashboardRoute())" :active="request()->routeIs('admin.dashboard') || request()->routeIs('user.dashboard') || request()->routeIs('media.dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    @if(Auth::user()->isAdmin())
+                        <x-nav-link :href="route('admin.approvals')" :active="request()->routeIs('admin.approvals')">
+                            {{ __('Approvals') }}
+                        </x-nav-link>
+                    @endif
+                    @if(Auth::user()->isUser())
+                        <x-nav-link :href="route('user.requests')" :active="request()->routeIs('user.requests')">
+                            {{ __('My requests') }}
+                        </x-nav-link>
+                    @endif
+                    @if(Auth::user()->isMultimediaStaff())
+                        <x-nav-link :href="route('media.posts')" :active="request()->routeIs('media.posts')">
+                            {{ __('Posts') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -68,9 +83,24 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+            <x-responsive-nav-link :href="route(Auth::user()->dashboardRoute())" :active="request()->routeIs('admin.dashboard') || request()->routeIs('user.dashboard') || request()->routeIs('media.dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            @if(Auth::user()->isAdmin())
+                <x-responsive-nav-link :href="route('admin.approvals')" :active="request()->routeIs('admin.approvals')">
+                    {{ __('Approvals') }}
+                </x-responsive-nav-link>
+            @endif
+            @if(Auth::user()->isUser())
+                <x-responsive-nav-link :href="route('user.requests')" :active="request()->routeIs('user.requests')">
+                    {{ __('My requests') }}
+                </x-responsive-nav-link>
+            @endif
+            @if(Auth::user()->isMultimediaStaff())
+                <x-responsive-nav-link :href="route('media.posts')" :active="request()->routeIs('media.posts')">
+                    {{ __('Posts') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
