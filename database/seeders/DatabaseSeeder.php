@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'armojallasmichaeljhan0314@gmail.com'],
             array_merge($defaults, ['name' => 'Admin User'])
         );
 

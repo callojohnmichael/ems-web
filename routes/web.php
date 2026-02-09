@@ -39,6 +39,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/support', [SupportController::class, 'index'])->name('support.index');
 });
 
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::post('/events/bulk-upload', [EventController::class, 'bulkUpload'])->name('events.bulk-upload');
+});
+
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
     Route::get('/approvals', [DashboardController::class, 'adminApprovals'])->name('approvals');
@@ -51,6 +56,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/roles/users/{user}', [RolePermissionController::class, 'updateUser'])->name('roles.update-user');
     Route::get('/roles/role/{role}/edit', [RolePermissionController::class, 'editRole'])->name('roles.edit-role');
     Route::put('/roles/role/{role}', [RolePermissionController::class, 'updateRole'])->name('roles.update-role');
+    
+    
 });
 
 Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {

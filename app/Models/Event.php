@@ -96,4 +96,11 @@ class Event extends Model
     {
         return $this->hasMany(FeedbackResponse::class);
     }
+
+    public function venue()
+{
+    return $this->belongsTo(Venue::class);
+}
+
+
 }

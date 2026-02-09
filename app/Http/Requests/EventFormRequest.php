@@ -7,20 +7,20 @@ use Illuminate\Support\Facades\Auth;
 
 class EventFormRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        if ($this->isMethod('POST')) {
-            // Users can create events (requests)
-            return Auth::user()->isUser();
-        }
+    // public function authorize(): bool
+    // {
+    //     if ($this->isMethod('POST')) {
+    //         // Users can create events (requests)
+    //         return Auth::user()->isUser();
+    //     }
 
-        if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            // Only admins can edit events
-            return Auth::user()->isAdmin();
-        }
+    //     if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
+    //         // Only admins can edit events
+    //         return Auth::user()->isAdmin();
+    //     }
 
-        return false;
-    }
+    //     return false;
+    // }
 
     public function rules(): array
     {
