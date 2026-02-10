@@ -149,7 +149,7 @@
         <div class="absolute inset-0 bg-black/60" @click="showUploadModal=false"></div>
 
         <div class="relative bg-white max-w-md mx-auto mt-24 rounded-xl shadow-xl">
-            <form method="POST" action="{{ route('events.bulk-upload') }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('admin.events.bulk-upload') }}" enctype="multipart/form-data">
                 @csrf
 
                 <div class="p-6">
