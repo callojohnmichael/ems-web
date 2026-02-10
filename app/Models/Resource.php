@@ -11,6 +11,14 @@ class Resource extends Model
         'name',
         'type',
         'quantity',
+        'price', // Added price
+    ];
+
+    /**
+     * Ensure price is always treated as a decimal with 2 points.
+     */
+    protected $casts = [
+        'price' => 'decimal:2',
     ];
 
     public function resourceAllocations(): HasMany
