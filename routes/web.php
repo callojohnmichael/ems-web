@@ -60,9 +60,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/media/posts', [MultimediaController::class, 'posts'])->name('media.posts');
     Route::get('/media/posts/{post}', [MultimediaController::class, 'postsShow'])->name('media.posts.show');
 
-    // Comments and reactions (authenticated users)
-    Route::post('/media/posts/{post}/comments', [\App\Http\Controllers\PostCommentController::class, 'store'])->name('media.posts.comments.store');
-    Route::post('/media/posts/{post}/reactions', [\App\Http\Controllers\PostReactionController::class, 'toggle'])->name('media.posts.reactions.toggle');
 
     // Event ratings
     Route::post('/events/{event}/ratings', [\App\Http\Controllers\EventRatingController::class, 'store'])->name('events.ratings.store');
@@ -79,6 +76,13 @@ Route::middleware('auth')->group(function () {
 
     // Program Flow
     Route::get('/program-flow', [ProgramFlowController::class, 'index'])->name('program-flow.index');
+    Route::get('/program-flow/{event}', [ProgramFlowController::class, 'show'])->name('program-flow.show');
+
+    // Program item management (protected by permission:manage scheduling in controller)
+    Route::post('/program-flow/{event}/items', [ProgramFlowController::class, 'storeItem'])->name('program-flow.items.store');
+    Route::put('/program-flow/items/{item}', [ProgramFlowController::class, 'updateItem'])->name('program-flow.items.update');
+    Route::delete('/program-flow/items/{item}', [ProgramFlowController::class, 'destroyItem'])->name('program-flow.items.destroy');
+    Route::post('/program-flow/{event}/items/reorder', [ProgramFlowController::class, 'reorderItems'])->name('program-flow.items.reorder');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
