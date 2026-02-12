@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\Budget;
 use App\Models\EventHistory;
 use App\Models\CustodianMaterial;
+use App\Models\EventLogisticsItem;
 use App\Models\EventCustodianRequest;
 use App\Models\EventFinanceRequest;
 
@@ -81,11 +82,19 @@ class EventController extends Controller
             $employees = Employee::orderBy('last_name')->get();
             $custodianMaterials = CustodianMaterial::orderBy('name')->get();
 
+            // Include previously requested logistics descriptions so users can re-select
+            $previousLogistics = EventLogisticsItem::query()
+                ->whereNotNull('description')
+                ->distinct()
+                ->orderBy('description')
+                ->pluck('description');
+
             return view('events.create', compact(
                 'venues',
                 'resources',
                 'employees',
-                'custodianMaterials'
+                'custodianMaterials',
+                'previousLogistics'
             ));
         }
 
@@ -180,6 +189,19 @@ class EventController extends Controller
                             $event->custodianRequests()->create([
                                 'custodian_material_id' => $row['material_id'],
                                 'quantity' => $row['quantity'],
+                            ]);
+                        }
+                    }
+                }
+
+                // ================= COMMITTEE =================
+                if ($request->has('committee')) {
+                    foreach ($request->committee as $member) {
+                        if (!empty($member['employee_id'])) {
+                            $event->participants()->create([
+                                'employee_id' => $member['employee_id'],
+                                'role'        => $member['role'] ?? null,
+                                'type'        => 'committee',
                             ]);
                         }
                     }

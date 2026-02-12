@@ -56,6 +56,27 @@ Route::middleware('auth')->group(function () {
     // Multimedia
     Route::get('/multimedia', [MultimediaController::class, 'index'])->name('multimedia.index');
 
+    // Media posts (general authenticated access) served by MultimediaController
+    Route::get('/media/posts', [MultimediaController::class, 'posts'])->name('media.posts');
+    Route::get('/media/posts/{post}', [MultimediaController::class, 'postsShow'])->name('media.posts.show');
+
+    // Comments and reactions (authenticated users)
+    Route::post('/media/posts/{post}/comments', [\App\Http\Controllers\PostCommentController::class, 'store'])->name('media.posts.comments.store');
+    Route::post('/media/posts/{post}/reactions', [\App\Http\Controllers\PostReactionController::class, 'toggle'])->name('media.posts.reactions.toggle');
+
+    // Event ratings
+    Route::post('/events/{event}/ratings', [\App\Http\Controllers\EventRatingController::class, 'store'])->name('events.ratings.store');
+
+    // Multimedia creation/editing protected by permissions (managed via RolePermissionController)
+    Route::get('/media/posts/create', [MultimediaController::class, 'postsCreate'])
+        ->middleware(['permission:create posts'])->name('media.posts.create');
+
+    Route::post('/media/posts', [MultimediaController::class, 'postsStore'])
+        ->middleware(['permission:create posts'])->name('media.posts.store');
+
+    // Deletion is authorized in controller (owner, admin, or 'manage all posts' permission)
+    Route::delete('/media/posts/{post}', [MultimediaController::class, 'postsDestroy'])->name('media.posts.destroy');
+
     // Program Flow
     Route::get('/program-flow', [ProgramFlowController::class, 'index'])->name('program-flow.index');
 

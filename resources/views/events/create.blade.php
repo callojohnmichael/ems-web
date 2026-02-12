@@ -135,19 +135,27 @@
 
                         <div class="space-y-3">
                             <template x-for="(row, index) in rows" :key="index">
-                                <div class="grid grid-cols-12 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 items-end">
+                                <div class="grid grid-cols-12 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-700 items-end">
                                     
                                     <div class="col-span-12 md:col-span-5">
-                                        <label class="block text-xs font-bold text-gray-600 mb-1">Resource</label>
+                                        <label class="block text-xs font-bold text-white mb-1">Resource</label>
                                         <select 
                                                :name="`logistics_items[${index}][resource_id]`" 
                                                x-model="row.resource_id"
                                                @change="updateResourceName(index)"
-                                               class="w-full rounded-lg border-gray-300 focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="w-full rounded-lg border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 logistics-select opacity-60">
                                             <option value="">-- Select Resource --</option>
                                             @foreach($resources as $resource)
                                                 <option value="{{ $resource->id }}">{{ $resource->name }}</option>
                                             @endforeach
+                                            @if(!empty($previousLogistics) && $previousLogistics->count())
+                                                <optgroup label="Previously requested items">
+                                                    @foreach($previousLogistics as $prev)
+                                                        {{-- encode name in value so change handler can detect and set resource_name --}}
+                                                        <option value="custom:{{ rawurlencode($prev) }}">{{ $prev }}</option>
+                                                    @endforeach
+                                                </optgroup>
+                                            @endif
                                             <option value="custom">-- Not on list (Manual Entry) --</option>
                                         </select>
                                     </div>
@@ -196,6 +204,7 @@
                                 </div>
                             </template>
                         </div>
+                        <BR><BR></BR></BR>
 
                         <div class="mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex justify-between items-center">
                             <span class="text-indigo-900 font-bold uppercase tracking-wider text-sm">Estimated Total Budget:</span>
@@ -408,7 +417,9 @@
                 rows: {!! json_encode(old('logistics_items', [['resource_id' => '', 'resource_name' => '', 'quantity' => 1, 'unit_price' => 0]])) !!},
                 
                 addRow() { 
-                    this.rows.push({ resource_id: '', resource_name: '', quantity: 1, unit_price: 0 }) 
+                    this.rows.push({ resource_id: '', resource_name: '', quantity: 1, unit_price: 0 });
+                    // initialize tom-select on the newly added select (deferred)
+                    setTimeout(() => { if (window.initLogisticsSelects) window.initLogisticsSelects(); }, 0);
                 },
                 
                 removeRow(i) { 
@@ -416,8 +427,24 @@
                 },
 
                 updateResourceName(index) {
-                    // When a resource is selected, clear the manual name field
-                    if (this.rows[index].resource_id && this.rows[index].resource_id !== 'custom') {
+                    // Handle values that encode custom names (format: custom:ENCODED_NAME)
+                    const val = this.rows[index].resource_id || '';
+                    if (val.startsWith('custom:')) {
+                        try {
+                            const enc = val.substring(7);
+                            const decoded = decodeURIComponent(enc);
+                            this.rows[index].resource_id = 'custom';
+                            this.rows[index].resource_name = decoded;
+                        } catch (e) {
+                            // fallback: use raw substring
+                            this.rows[index].resource_id = 'custom';
+                            this.rows[index].resource_name = val.substring(7);
+                        }
+                        return;
+                    }
+
+                    // When a master resource is selected, clear the manual name field
+                    if (val && val !== 'custom') {
                         this.rows[index].resource_name = '';
                     }
                 },
@@ -443,6 +470,33 @@
                 removeRow(i) { if(this.rows.length > 1) this.rows.splice(i, 1) },
             }));
 
+        });
+    </script>
+
+    {{-- Tom Select for searchable/creatable logistics selects (CDN) --}}
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        window.initLogisticsSelects = function() {
+            document.querySelectorAll('select.logistics-select').forEach(function(sel) {
+                if (sel.dataset.tsInit) return;
+
+                // Build options: leave existing option elements intact. TomSelect will use them.
+                new TomSelect(sel, {
+                    create: function(input) {
+                        // create custom entries as encoded values so Alpine can detect them
+                        return { value: 'custom:' + encodeURIComponent(input), text: input };
+                    },
+                    sortField: [{ field: 'text', direction: 'asc' }],
+                    plugins: ['clear_button']
+                });
+
+                sel.dataset.tsInit = '1';
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.initLogisticsSelects) window.initLogisticsSelects();
         });
     </script>
 </x-app-layout>

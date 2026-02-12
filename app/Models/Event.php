@@ -124,6 +124,11 @@ public function resourceAllocations(): HasMany
         return $this->hasOne(EventFinanceRequest::class);
     }
 
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(EventRating::class);
+    }
+
 public function logisticsItems()
 {
     return $this->hasMany(EventLogisticsItem::class);
