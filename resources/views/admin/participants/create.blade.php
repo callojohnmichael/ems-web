@@ -32,15 +32,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {{-- Searchable User Selection --}}
                     <div class="md:col-span-2">
-                        <label for="user_id" class="block text-sm font-medium text-gray-900">Search System User</label>
-                        <select name="user_id" id="user_id" placeholder="Start typing a name or email..." autocomplete="off">
-                            <option value="">-- Manual Entry (Not a system user) --</option>
-                            @foreach($users as $u)
-                                <option value="{{ $u->id }}" 
-                                        data-name="{{ $u->name }}" 
-                                        data-email="{{ $u->email }}"
-                                        {{ old('user_id') == $u->id ? 'selected' : '' }}>
-                                    {{ $u->name }} ({{ $u->email }})
+                        <label for="employee_id" class="block text-sm font-medium text-gray-900">Search Employee</label>
+                        <select name="employee_id" id="employee_id" placeholder="Start typing a name or email..." autocomplete="off">
+                            <option value="">-- Manual Entry (Not an employee) --</option>
+                            @foreach($employees as $emp)
+                                <option value="{{ $emp->id }}" 
+                                        data-name="{{ $emp->full_name }}" 
+                                        data-email="{{ $emp->email ?? '' }}"
+                                        {{ old('employee_id') == $emp->id ? 'selected' : '' }}>
+                                    {{ $emp->full_name }} {{ $emp->email ? '(' . $emp->email . ')' : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -102,8 +102,8 @@
     {{-- Initialization Script --}}
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // Initialize Searchable Dropdown
-            const userSelect = new TomSelect("#user_id", {
+            // Initialize Searchable Dropdown for employees
+            const empSelect = new TomSelect("#employee_id", {
                 create: false,
                 sortField: { field: "text", direction: "asc" }
             });
@@ -112,18 +112,12 @@
             const emailInput = document.getElementById('email');
 
             // Handle Auto-fill
-            userSelect.on('change', function(value) {
-                const selectedOption = userSelect.options[value];
-                
-                if (selectedOption) {
-                    // Extract data from the original option element
-                    const originalOption = document.querySelector(`#user_id option[value="${value}"]`);
-                    if (originalOption) {
-                        nameInput.value = originalOption.dataset.name || '';
-                        emailInput.value = originalOption.dataset.email || '';
-                    }
+            empSelect.on('change', function(value) {
+                const originalOption = document.querySelector(`#employee_id option[value="${value}"]`);
+                if (originalOption) {
+                    nameInput.value = originalOption.dataset.name || '';
+                    emailInput.value = originalOption.dataset.email || '';
                 } else {
-                    // Reset if manual entry is selected
                     nameInput.value = '';
                     emailInput.value = '';
                 }

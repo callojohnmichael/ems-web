@@ -4,8 +4,8 @@
         {{-- HEADER --}}
         <div class="sm:flex sm:items-center sm:justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Event Participant Overview</h1>
-                <p class="text-sm text-gray-500">Breakdown of committees and attendees per event.</p>
+                <h1 class="text-2xl font-bold text-gray-900">Published Events — Participants</h1>
+                <p class="text-sm text-gray-500">Only published events are listed here. Use the actions to add participants or view event details.</p>
             </div>
 
             <div class="flex gap-4">
@@ -53,17 +53,21 @@
                             <span class="text-[10px] text-gray-500 uppercase font-semibold">Total Participants</span>
                         </div>
 
-                        @if($event->status === 'published' || auth()->user()->isAdmin())
-                            <a href="{{ route('events.participants.create', $event) }}"
+                        <div class="flex items-center space-x-2">
+                                <!-- <a href="{{ route('admin.events.participants.create', $event) }}"
                                class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-md hover:bg-blue-700 transition">
                                 + Add
-                            </a>
-                        @endif
+                            </a> -->
+
+                                <a href="{{ route('admin.events.participants.index', $event) }}" class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-md">Details</a>
+
+                            <button type="button" onclick="document.getElementById('participants-{{ $event->id }}').classList.toggle('hidden')" class="inline-flex items-center px-3 py-1.5 bg-white border text-xs rounded-md">Toggle participants</button>
+                        </div>
                     </div>
                 </div>
 
                 {{-- TABLE --}}
-                <div class="overflow-x-auto">
+                <div id="participants-{{ $event->id }}" class="overflow-x-auto hidden">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-gray-25 border-b border-gray-100">
                             <tr>
@@ -119,7 +123,7 @@
 
                                     <td class="px-6 py-3 text-right">
                                         @if(auth()->user()->isAdmin() || ($event->user_id === auth()->id() && $event->status === 'published'))
-                                            <a href="{{ route('events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
+                                            <a href="{{ route('admin.events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
                                         @endif
                                     </td>
                                 </tr>
@@ -154,7 +158,7 @@
 
                                     <td class="px-6 py-3 text-right">
                                         @if(auth()->user()->isAdmin() || ($event->user_id === auth()->id() && $event->status === 'published'))
-                                            <a href="{{ route('events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
+                                            <a href="{{ route('admin.events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
                                         @endif
                                     </td>
                                 </tr>
@@ -177,7 +181,7 @@
 
         @empty
             <div class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed">
-                <p class="text-gray-500">No events found under your management.</p>
+                <p class="text-gray-500">No published events found.</p>
             </div>
         @endforelse
 

@@ -50,6 +50,7 @@
                 <!-- User Selection -->
                 <div>
                     <label for="user_id" class="block text-sm font-medium text-gray-900">Link to User (Optional)</label>
+                    @php $users = $users ?? collect(); @endphp
                     <select name="user_id" id="user_id" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 @error('user_id') border-red-500 @enderror">
                         <option value="">-- Select a user --</option>
                         @foreach($users as $u)

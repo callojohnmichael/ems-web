@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Participant;
 use App\Models\User;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -18,16 +19,46 @@ class ParticipantController extends Controller
     /* =======================================================
        LIST EVENTS + PARTICIPANTS
     ======================================================= */
-    public function index(): View
+    public function index(Event $event = null): View
     {
         $user = auth()->user();
         $isAdmin = $user->isAdmin();
+        // If an event was provided (route: admin.events.participants.index), show full event details
+        if ($event) {
+            // ensure event is visible to non-admin owners
+            if (!$isAdmin && $event->user_id !== $user->id) {
+                abort(403);
+            }
+
+            $event->load(['participants.user.roles', 'participants.employee', 'venue', 'custodianRequests', 'financeRequest', 'logisticsItems']);
+
+            $committees = $event->participants->where('type', 'committee');
+            $standardParticipants = $event->participants->where('type', 'participant');
+
+            $participantCount = $event->participants->count();
+            $attendedCount = $event->participants->where('status', 'attended')->count();
+            $absentCount = $event->participants->where('status', 'absent')->count();
+
+            $employees = Employee::orderBy('last_name')->orderBy('first_name')->get();
+
+            return view('admin.participants.event', compact(
+                'event',
+                'committees',
+                'standardParticipants',
+                'participantCount',
+                'attendedCount',
+                'absentCount',
+                'employees'
+            ));
+        }
 
         $events = Event::query()
             ->with(['participants.user.roles', 'participants.employee'])
             ->when(!$isAdmin, fn ($q) =>
                 $q->where('user_id', $user->id)
             )
+            // Only show published events on the participants index
+            ->where('status', 'published')
             ->orderByDesc('start_at')
             ->paginate(10);
 
@@ -37,6 +68,9 @@ class ParticipantController extends Controller
                     $e->where('user_id', $user->id)
                 )
             );
+
+        // Stat counts should only consider participants on published events
+        $statsQuery = (clone $statsQuery)->whereHas('event', fn($e) => $e->where('status', 'published'));
 
         return view('admin.participants.index', [
             'events'                => $events,
@@ -59,7 +93,7 @@ class ParticipantController extends Controller
 
         return view('admin.participants.create', [
             'event' => $event,
-            'users' => User::with('roles')->orderBy('name')->get(),
+            'employees' => Employee::orderBy('last_name')->orderBy('first_name')->get(),
         ]);
     }
 
