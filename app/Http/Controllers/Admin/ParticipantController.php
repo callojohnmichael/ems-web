@@ -87,13 +87,17 @@ class ParticipantController extends Controller
     {
         $this->authorize('update', $event);
 
-        if ($event->status !== 'published' && !auth()->user()->isAdmin()) {
-            return back()->withErrors('Event must be published to add participants.');
-        }
+        $user = auth()->user();
+        $isAdmin = $user->isAdmin();
+
+        // If event is not published and the user is not an admin,
+        // only allow adding committee members (enforced on store as well).
+        $onlyCommittee = $event->status !== 'published' && !$isAdmin;
 
         return view('admin.participants.create', [
             'event' => $event,
             'employees' => Employee::orderBy('last_name')->orderBy('first_name')->get(),
+            'onlyCommittee' => $onlyCommittee,
         ]);
     }
 
@@ -114,6 +118,19 @@ class ParticipantController extends Controller
             'type'        => 'required|in:participant,committee',
             'status'      => 'required|in:pending,confirmed,attended,absent',
         ]);
+
+        // If the event is not published, only allow adding committee members
+        // unless the current user is an admin. This enforces: can only add
+        // non-committee participants when the event is published.
+        $currentUser = auth()->user();
+        $isAdmin = $currentUser->isAdmin();
+
+        if ($event->status !== 'published' && !$isAdmin) {
+            // If request indicates a non-committee participant, reject.
+            if (($validated['type'] ?? '') !== 'committee') {
+                return back()->withErrors('Event is not published. Only committee members can be added at this time.')->withInput();
+            }
+        }
 
         /**
          * 🔐 FORCE EVENT ID

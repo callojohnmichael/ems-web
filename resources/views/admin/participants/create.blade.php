@@ -72,10 +72,20 @@
 
                     <div>
                         <label for="type" class="block text-sm font-medium text-gray-900">Classification</label>
-                        <select name="type" id="type" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm">
-                            <option value="participant" {{ old('type') == 'participant' ? 'selected' : '' }}>Participant</option>
-                            <option value="committee" {{ old('type') == 'committee' ? 'selected' : '' }}>Committee</option>
-                        </select>
+                        @php
+                            $onlyCommittee = $onlyCommittee ?? false;
+                        @endphp
+
+                        @if($onlyCommittee)
+                            <div class="text-sm text-gray-700 mb-2">Event is not published — only committee members can be added.</div>
+                            <input type="hidden" name="type" value="committee" />
+                            <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-700">Committee</div>
+                        @else
+                            <select name="type" id="type" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm">
+                                <option value="participant" {{ old('type') == 'participant' ? 'selected' : '' }}>Participant</option>
+                                <option value="committee" {{ old('type') == 'committee' ? 'selected' : '' }}>Committee</option>
+                            </select>
+                        @endif
                     </div>
 
                     <div>

@@ -87,10 +87,18 @@
 
                     <div>
                         <label class="text-sm">Type</label>
-                        <select name="type" class="mt-1 block w-full border rounded px-2 py-1">
-                            <option value="participant" {{ old('type') == 'participant' ? 'selected' : '' }}>Participant</option>
-                            <option value="committee" {{ old('type') == 'committee' ? 'selected' : '' }}>Committee</option>
-                        </select>
+                        @php $onlyCommittee = ($event->status !== 'published' && !auth()->user()->isAdmin()); @endphp
+
+                        @if($onlyCommittee)
+                            <div class="text-sm text-gray-700 mb-2">Event is not published — only committee members can be added.</div>
+                            <input type="hidden" name="type" value="committee" />
+                            <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-700">Committee</div>
+                        @else
+                            <select name="type" class="mt-1 block w-full border rounded px-2 py-1">
+                                <option value="participant" {{ old('type') == 'participant' ? 'selected' : '' }}>Participant</option>
+                                <option value="committee" {{ old('type') == 'committee' ? 'selected' : '' }}>Committee</option>
+                            </select>
+                        @endif
                     </div>
 
                     <div>

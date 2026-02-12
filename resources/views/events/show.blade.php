@@ -110,7 +110,7 @@
     </div>
 
     {{-- ================= REGULAR PARTICIPANTS CARD ================= --}}
-    <div class="bg-white shadow rounded-lg border overflow-hidden">
+    <!-- <div class="bg-white shadow rounded-lg border overflow-hidden">
         <div class="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
             <h3 class="text-lg font-bold text-gray-900">Registered Participants</h3>
             <div class="flex gap-2">
@@ -163,7 +163,7 @@
                 </tbody>
             </table>
         </div>
-    </div>
+    </div> -->
 
     {{-- ================= LOGISTICS, CUSTODIAN & FINANCE (Logic derived from your previous code) ================= --}}
     @php

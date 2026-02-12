@@ -141,11 +141,11 @@
                             Expected Participants: {{ $event->number_of_participants ?? 0 }}
                         </span>
 
-                        <span class="badge">
+                        <!-- <span class="badge">
                             <a href="{{ route('events.participants.index', $event) }}" class="hover:underline">
                                 Registered: {{ $committeeCount }}
                             </a>
-                        </span>
+                        </span> -->
 
                         <span class="badge">
                             Logistics: {{ $logisticsCount }}
@@ -199,12 +199,12 @@
                         View Details
                     </a>
 
-                    @if($canManageParticipants)
-                        <a href="{{ route('events.participants.index', $event) }}"
-                           class="btn-secondary text-purple-600">
-                            👥 Participants ({{ $committeeCount }})
-                        </a>
-                    @endif
+                        <!-- @if($canManageParticipants)
+                            <a href="{{ route('events.participants.index', $event) }}"
+                            class="btn-secondary text-purple-600">
+                                👥 Participants ({{ $committeeCount }})
+                            </a>
+                        @endif -->
 
                     @role('admin')
 
