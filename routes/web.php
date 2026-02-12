@@ -98,6 +98,7 @@ Route::middleware(['auth', 'role:admin'])
 
         // Admin Modules
         Route::resource('venues', VenueController::class);
+        Route::resource('participants', ParticipantController::class);
         Route::resource('events.participants', ParticipantController::class);
         Route::get('/events/{event}/participants/export', [ParticipantController::class, 'export'])->name('events.participants.export');
         Route::resource('reports', ReportController::class)->only(['index']);

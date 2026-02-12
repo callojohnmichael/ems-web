@@ -245,6 +245,8 @@ Committee
 
 </div>
 
+</div>
+
 <div class="px-6 py-4 border-t bg-gray-50 text-right">
 <button type="submit"
         class="px-4 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold uppercase">

@@ -44,6 +44,10 @@ class ParticipantController extends Controller
     {
         $this->authorize('update', $event);
         
+        if ($event->status !== 'published') {
+            return back()->withErrors('Participants can only be added to published events.');
+        }
+        
         $users = User::all();
         $canManageParticipants = auth()->user()->isAdmin() || auth()->user()->hasPermissionTo('manage participants');
 
@@ -60,6 +64,10 @@ class ParticipantController extends Controller
     public function store(Request $request, Event $event)
     {
         $this->authorize('update', $event);
+
+        if ($event->status !== 'published') {
+            return back()->withErrors('Participants can only be added to published events.');
+        }
 
         $validated = $request->validate([
             'user_id' => 'nullable|exists:users,id',
@@ -108,6 +116,10 @@ class ParticipantController extends Controller
 
         $this->authorize('update', $event);
 
+        if ($event->status !== 'published') {
+            return back()->withErrors('Participants can only be edited for published events.');
+        }
+
         $users = User::all();
         $canManageParticipants = auth()->user()->isAdmin() || auth()->user()->hasPermissionTo('manage participants');
 
@@ -130,6 +142,10 @@ class ParticipantController extends Controller
         }
 
         $this->authorize('update', $event);
+
+        if ($event->status !== 'published') {
+            return back()->withErrors('Participants can only be edited for published events.');
+        }
 
         $validated = $request->validate([
             'user_id' => 'nullable|exists:users,id',

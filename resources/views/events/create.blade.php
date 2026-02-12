@@ -442,6 +442,7 @@
                 addRow() { this.rows.push({ employee_id: '', role: '' }) },
                 removeRow(i) { if(this.rows.length > 1) this.rows.splice(i, 1) },
             }));
+
         });
     </script>
 </x-app-layout>

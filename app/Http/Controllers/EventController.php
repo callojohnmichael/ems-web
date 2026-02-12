@@ -69,7 +69,39 @@ class EventController extends Controller
     $canManageParticipants = $user->isAdmin() || $user->hasPermissionTo('manage participants');
 
     return view('events.index', compact('events', 'canManageVenues', 'canManageParticipants'));
-        if ($isTaken) {
+        }
+
+        /**
+         * Show the form for creating a new event.
+         */
+        public function create(): View
+        {
+            $venues = Venue::orderBy('name')->get();
+            $resources = Resource::orderBy('name')->get();
+            $employees = Employee::orderBy('last_name')->get();
+            $custodianMaterials = CustodianMaterial::orderBy('name')->get();
+
+            return view('events.create', compact(
+                'venues',
+                'resources',
+                'employees',
+                'custodianMaterials'
+            ));
+        }
+
+        /**
+         * Store a newly created event in storage.
+         */
+        public function store(EventFormRequest $request): RedirectResponse
+        {
+            $isTaken = Venue::checkVenueAvailability(
+                $request->venue_id,
+                $request->start_at,
+                $request->end_at,
+                null
+            );
+    
+            if ($isTaken) {
             return back()->withInput()->withErrors([
                 'venue_id' => 'The venue is already booked for these dates.'
             ]);
@@ -148,20 +180,6 @@ class EventController extends Controller
                             $event->custodianRequests()->create([
                                 'custodian_material_id' => $row['material_id'],
                                 'quantity' => $row['quantity'],
-                            ]);
-                        }
-                    }
-                }
-
-                // ================= COMMITTEE =================
-                if ($request->has('committee')) {
-                    foreach ($request->committee as $member) {
-
-                        if (!empty($member['employee_id'])) {
-                            $event->participants()->create([
-                                'employee_id' => $member['employee_id'],
-                                'role'        => $member['role'] ?? null,
-                                'type'        => 'committee',
                             ]);
                         }
                     }
@@ -268,7 +286,6 @@ class EventController extends Controller
 
             /* ================= CLEAR OLD RELATED DATA ================= */
             $event->logisticsItems()->delete(); // 🔥 changed
-            $event->participants()->delete();
             $event->budget()->delete();
             $event->custodianRequests()->delete();
             $event->financeRequest()->delete();
@@ -331,20 +348,6 @@ class EventController extends Controller
                         $event->custodianRequests()->create([
                             'custodian_material_id' => $row['material_id'],
                             'quantity' => $row['quantity'],
-                        ]);
-                    }
-                }
-            }
-
-            /* ================= COMMITTEE ================= */
-            if ($request->has('committee')) {
-                foreach ($request->committee as $member) {
-
-                    if (!empty($member['employee_id'])) {
-                        $event->participants()->create([
-                            'employee_id' => $member['employee_id'],
-                            'role'        => $member['role'] ?? null,
-                            'type'        => 'committee',
                         ]);
                     }
                 }
@@ -463,7 +466,6 @@ public function destroy(Event $event): RedirectResponse
         $event->custodianRequests()->delete();
         $event->budget()->delete();
         $event->financeRequest()->delete();
-        $event->participants()->delete();
         $event->histories()->delete();
 
         $event->update(['status' => 'deleted']);
