@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,13 +9,16 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * 🔥 IMPORTANT FOR SPATIE
+     * Ensures role/permission uses "web" guard (matches your seeder & routes)
+     */
+    protected string $guard_name = 'web';
+
+    /**
+     * Mass assignable
      */
     protected $fillable = [
         'name',
@@ -26,9 +28,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Hidden fields
      */
     protected $hidden = [
         'password',
@@ -36,9 +36,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Casts
      */
     protected function casts(): array
     {
@@ -48,6 +46,12 @@ class User extends Authenticatable
             'skip_2fa' => 'boolean',
         ];
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ROLE HELPERS
+    |--------------------------------------------------------------------------
+    */
 
     public function isAdmin(): bool
     {
@@ -64,15 +68,19 @@ class User extends Authenticatable
         return $this->hasRole('multimedia_staff');
     }
 
-    /**
-     * Route name for this user's role-specific dashboard.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | ROLE-BASED DASHBOARD REDIRECT
+    |--------------------------------------------------------------------------
+    */
+
     public function dashboardRoute(): string
     {
-        if ($this->hasRole('admin')) {
+        if ($this->isAdmin()) {
             return 'admin.dashboard';
         }
-        if ($this->hasRole('multimedia_staff')) {
+
+        if ($this->isMultimediaStaff()) {
             return 'media.dashboard';
         }
 

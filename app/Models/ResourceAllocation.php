@@ -7,21 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ResourceAllocation extends Model
 {
-    protected $fillable = [
-        'event_id',
-        'resource_id',
-        'quantity',
-        'start_at',
-        'end_at',
-    ];
+protected $fillable = [
+    'event_id',
+    'resource_id',
+    'quantity',
+    'start_at',
+    'end_at',
+];
 
-    protected function casts(): array
-    {
-        return [
-            'start_at' => 'datetime',
-            'end_at' => 'datetime',
-        ];
-    }
+
+protected $casts = [
+    'start_at' => 'datetime',
+    'end_at' => 'datetime',
+];
 
     public function event(): BelongsTo
     {
