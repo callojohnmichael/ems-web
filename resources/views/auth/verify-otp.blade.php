@@ -76,7 +76,12 @@
 
                         <form method="POST" action="{{ route('otp.resend') }}" class="mt-4 text-center">
                             @csrf
-                            <button type="submit" class="text-sm font-medium text-slate-500 transition hover:text-slate-700">
+                            <button
+                                id="resend-btn"
+                                type="submit"
+                                class="text-sm font-medium text-slate-500 transition hover:text-slate-700 disabled:cursor-not-allowed disabled:text-slate-400"
+                                @disabled(($otpSecondsRemaining ?? 60) > 0)
+                            >
                                 Resend code
                             </button>
                         </form>
@@ -146,15 +151,24 @@
             }
 
             const timerElement = document.getElementById('otp-timer');
+            const resendButton = document.getElementById('resend-btn');
             if (timerElement) {
                 let remainingSeconds = parseInt(timerElement.dataset.seconds || '0', 10);
                 const renderTimer = () => {
                     if (remainingSeconds <= 0) {
                         timerElement.textContent = 'Your code has expired. Please request a new code.';
+                        if (resendButton) {
+                            resendButton.disabled = false;
+                            resendButton.textContent = 'Resend code';
+                        }
                         return false;
                     }
 
                     timerElement.textContent = `Enter the code within ${remainingSeconds} seconds to continue.`;
+                    if (resendButton) {
+                        resendButton.disabled = true;
+                        resendButton.textContent = `Resend code in ${remainingSeconds}s`;
+                    }
                     return true;
                 };
 
