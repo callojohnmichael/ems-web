@@ -1,5 +1,7 @@
 <x-app-layout>
     <div class="space-y-8">
+
+        {{-- HEADER --}}
         <div class="sm:flex sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Event Participant Overview</h1>
@@ -19,12 +21,15 @@
         </div>
 
         @forelse($events as $event)
+
             @php
                 $committees = $event->participants->where('type', 'committee');
                 $participants = $event->participants->where('type', 'participant');
             @endphp
 
             <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+
+                {{-- EVENT HEADER --}}
                 <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-bold text-gray-900">{{ $event->title }}</h2>
@@ -57,6 +62,7 @@
                     </div>
                 </div>
 
+                {{-- TABLE --}}
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-gray-25 border-b border-gray-100">
@@ -81,7 +87,9 @@
                             @foreach($committees as $participant)
                                 <tr class="hover:bg-orange-50/40 transition-colors">
                                     <td class="px-6 py-3">
-                                        <div class="font-medium text-gray-900">{{ $participant->name }}</div>
+                                        {{-- 🔥 FIXED --}}
+                                        <div class="font-medium text-gray-900">{{ $participant->display_name }}</div>
+
                                         <div class="flex gap-1 mt-1">
                                             @if($participant->user && $participant->user->roles->count())
                                                 @foreach($participant->user->roles as $role)
@@ -111,15 +119,12 @@
 
                                     <td class="px-6 py-3 text-right">
                                         @if(auth()->user()->isAdmin() || ($event->user_id === auth()->id() && $event->status === 'published'))
-                                            <div class="flex justify-end gap-3">
-                                                <a href="{{ route('events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
-                                            </div>
+                                            <a href="{{ route('events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
                                         @endif
                                     </td>
                                 </tr>
                             @endforeach
                         @endif
-
 
                         {{-- ================= PARTICIPANTS SECTION ================= --}}
                         @if($participants->count())
@@ -131,7 +136,8 @@
 
                             @foreach($participants as $participant)
                                 <tr class="hover:bg-blue-50/30 transition-colors">
-                                    <td class="px-6 py-3 font-medium text-gray-900">{{ $participant->name }}</td>
+                                    {{-- 🔥 FIXED --}}
+                                    <td class="px-6 py-3 font-medium text-gray-900">{{ $participant->display_name }}</td>
 
                                     <td class="px-6 py-3">
                                         <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-gray-100 text-gray-600">
@@ -148,9 +154,7 @@
 
                                     <td class="px-6 py-3 text-right">
                                         @if(auth()->user()->isAdmin() || ($event->user_id === auth()->id() && $event->status === 'published'))
-                                            <div class="flex justify-end gap-3">
-                                                <a href="{{ route('events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
-                                            </div>
+                                            <a href="{{ route('events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
                                         @endif
                                     </td>
                                 </tr>
@@ -170,6 +174,7 @@
                     </table>
                 </div>
             </div>
+
         @empty
             <div class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed">
                 <p class="text-gray-500">No events found under your management.</p>

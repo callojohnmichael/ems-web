@@ -48,7 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('events.participants', ParticipantController::class);
     Route::get('/events/{event}/participants/export', [ParticipantController::class, 'export'])->name('events.participants.export');
 
-    // Event actions (still accessible depending on policy/roles)
+    // Event actions
     Route::post('/events/{event}/approve', [EventController::class, 'approve'])->name('events.approve');
     Route::post('/events/{event}/reject', [EventController::class, 'reject'])->name('events.reject');
     Route::post('/events/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
@@ -65,7 +65,7 @@ Route::middleware('auth')->group(function () {
     // Support
     Route::get('/support', [SupportController::class, 'index'])->name('support.index');
 
-    // Venue availability endpoint for AJAX checks (used by event create form)
+    // Venue availability endpoint
     Route::get('/venues/{venue}/availability', [VenueController::class, 'availability'])->name('venues.availability');
 });
 
@@ -84,7 +84,7 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
         Route::get('/approvals', [DashboardController::class, 'adminApprovals'])->name('approvals');
 
-        // Admin Events (this creates admin.events.show, admin.events.index, etc.)
+        // Admin Events
         Route::resource('events', EventController::class);
 
         // Admin event bulk upload
@@ -98,9 +98,14 @@ Route::middleware(['auth', 'role:admin'])
 
         // Admin Modules
         Route::resource('venues', VenueController::class);
-        Route::resource('participants', ParticipantController::class);
+        
+        // FIX: Prioritize nested resource so {event} is always captured
         Route::resource('events.participants', ParticipantController::class);
         Route::get('/events/{event}/participants/export', [ParticipantController::class, 'export'])->name('events.participants.export');
+
+        // General participants list (Only for index/listing, avoiding create/store conflict)
+        Route::get('/participants', [ParticipantController::class, 'index'])->name('participants.index');
+        
         Route::resource('reports', ReportController::class)->only(['index']);
         Route::resource('documents', DocumentController::class)->only(['index']);
 
@@ -122,7 +127,6 @@ Route::middleware(['auth', 'role:user'])
     ->prefix('user')
     ->name('user.')
     ->group(function () {
-
         Route::get('/dashboard', [DashboardController::class, 'user'])->name('dashboard');
         Route::get('/requests', [DashboardController::class, 'userRequests'])->name('requests');
     });
@@ -137,7 +141,6 @@ Route::middleware(['auth', 'role:multimedia_staff'])
     ->prefix('media')
     ->name('media.')
     ->group(function () {
-
         Route::get('/dashboard', [DashboardController::class, 'media'])->name('dashboard');
         Route::get('/posts', [DashboardController::class, 'mediaPosts'])->name('posts');
     });

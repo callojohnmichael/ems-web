@@ -15,190 +15,195 @@ class ParticipantController extends Controller
 {
     use AuthorizesRequests;
 
-    /**
-     * Display participants grouped by Event with Committee details.
-     */
-    public function index(Request $request): View
+    /* =======================================================
+       LIST EVENTS + PARTICIPANTS
+    ======================================================= */
+    public function index(): View
     {
         $user = auth()->user();
         $isAdmin = $user->isAdmin();
 
-        // 1. Fetch Events (Scoped to owner if not admin)
-        // We load participants with their user roles and employee details
-        $eventsQuery = Event::with(['participants.user.roles', 'participants.employee']);
+        $events = Event::query()
+            ->with(['participants.user.roles', 'participants.employee'])
+            ->when(!$isAdmin, fn ($q) =>
+                $q->where('user_id', $user->id)
+            )
+            ->orderByDesc('start_at')
+            ->paginate(10);
 
-        if (!$isAdmin) {
-            $eventsQuery->where('user_id', $user->id);
-        }
+        $statsQuery = Participant::query()
+            ->when(!$isAdmin, fn ($q) =>
+                $q->whereHas('event', fn ($e) =>
+                    $e->where('user_id', $user->id)
+                )
+            );
 
-        $events = $eventsQuery->orderBy('start_at', 'desc')->paginate(10);
-
-        // 2. Statistics for the Header
-        // Shows totals for all events the user has access to
-        $statsQuery = Participant::query();
-        if (!$isAdmin) {
-            $statsQuery->whereHas('event', fn($q) => $q->where('user_id', $user->id));
-        }
-
-        $totalParticipants = $statsQuery->count();
-        $totalRegistered = $statsQuery->where('status', 'confirmed')->count();
-        $canManageParticipants = $isAdmin || $user->hasPermissionTo('manage participants');
-
-        return view('admin.participants.index', compact(
-            'events',
-            'totalParticipants',
-            'totalRegistered',
-            'canManageParticipants'
-        ));
+        return view('admin.participants.index', [
+            'events'                => $events,
+            'totalParticipants'     => $statsQuery->count(),
+            'totalRegistered'       => (clone $statsQuery)->where('status', 'confirmed')->count(),
+            'canManageParticipants' => $isAdmin || $user->can('manage participants'),
+        ]);
     }
 
-    /**
-     * Show form to add participant - Restricted to Published events.
-     */
+    /* =======================================================
+       CREATE
+    ======================================================= */
     public function create(Event $event): View|RedirectResponse
     {
         $this->authorize('update', $event);
 
-        // Strict Check: Only published events can accept new participants (Admin override)
         if ($event->status !== 'published' && !auth()->user()->isAdmin()) {
-            return back()->withErrors('Registration is closed. This event is not currently "Published".');
+            return back()->withErrors('Event must be published to add participants.');
         }
 
-        $users = User::with('roles')->get(); 
-        return view('admin.participants.create', compact('event', 'users'));
+        return view('admin.participants.create', [
+            'event' => $event,
+            'users' => User::with('roles')->orderBy('name')->get(),
+        ]);
     }
 
-    /**
-     * Store participant with Employee and Type info.
-     */
+    /* =======================================================
+       STORE
+    ======================================================= */
     public function store(Request $request, Event $event): RedirectResponse
     {
         $this->authorize('update', $event);
 
-        if ($event->status !== 'published' && !auth()->user()->isAdmin()) {
-            return back()->withErrors('Cannot add participants to an unpublished event.');
-        }
-
         $validated = $request->validate([
             'user_id'     => 'nullable|exists:users,id',
             'employee_id' => 'nullable|exists:employees,id',
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|max:255',
+            'name'        => 'nullable|string|max:255',
+            'email'       => 'nullable|email|max:255',
             'phone'       => 'nullable|string|max:32',
-            'role'        => 'nullable|string|max:255', 
-            'type'        => 'required|string|in:participant,committee',
+            'role'        => 'nullable|string|max:255',
+            'type'        => 'required|in:participant,committee',
             'status'      => 'required|in:pending,confirmed,attended,absent',
         ]);
 
-        $event->participants()->create($validated);
+        /**
+         * 🔐 FORCE EVENT ID
+         * Never trust request input for foreign keys
+         */
+        $validated['event_id'] = $event->id;
+
+        /**
+         * ✅ Manual participants allowed
+         * (user_id & employee_id can be NULL)
+         */
+        Participant::create($validated);
 
         return redirect()
             ->route('admin.participants.index')
-            ->with('success', "{$validated['name']} added successfully.");
+            ->with('success', "Participant added to {$event->title}.");
     }
 
-    /**
-     * Show specific participant details.
-     */
+    /* =======================================================
+       SHOW
+    ======================================================= */
     public function show(Event $event, Participant $participant): View
     {
-        if ($participant->event_id !== $event->id) abort(404);
-        
-        // Ownership check: Can only view if Admin or Event Owner
+        abort_if($participant->event_id !== $event->id, 404);
+
         if (!auth()->user()->isAdmin() && $event->user_id !== auth()->id()) {
             abort(403);
         }
 
         $participant->load(['user.roles', 'employee', 'attendances']);
+
         return view('admin.participants.show', compact('event', 'participant'));
     }
 
-    /**
-     * Edit participant - Restricted to Published events.
-     */
-    public function edit(Event $event, Participant $participant): View|RedirectResponse
+    /* =======================================================
+       EDIT
+    ======================================================= */
+    public function edit(Event $event, Participant $participant): View
     {
-        if ($participant->event_id !== $event->id) abort(404);
+        abort_if($participant->event_id !== $event->id, 404);
         $this->authorize('update', $event);
-
-        if ($event->status !== 'published' && !auth()->user()->isAdmin()) {
-            return back()->withErrors('Modifications are locked while the event is not Published.');
-        }
 
         return view('admin.participants.edit', compact('event', 'participant'));
     }
 
-    /**
-     * Update participant record.
-     */
+    /* =======================================================
+       UPDATE
+    ======================================================= */
     public function update(Request $request, Event $event, Participant $participant): RedirectResponse
     {
-        if ($participant->event_id !== $event->id) abort(404);
+        abort_if($participant->event_id !== $event->id, 404);
         $this->authorize('update', $event);
 
-        if ($event->status !== 'published' && !auth()->user()->isAdmin()) {
-            return back()->withErrors('Updates are locked for this event status.');
-        }
-
         $validated = $request->validate([
-            'name'   => 'required|string|max:255',
-            'email'  => 'required|email|max:255',
+            'name'   => 'nullable|string|max:255',
+            'email'  => 'nullable|email|max:255',
             'status' => 'required|in:pending,confirmed,attended,absent',
             'role'   => 'nullable|string|max:255',
-            'type'   => 'required|string|in:participant,committee',
+            'type'   => 'required|in:participant,committee',
         ]);
 
         $participant->update($validated);
 
         return redirect()
             ->route('admin.participants.index')
-            ->with('success', 'Participant updated.');
+            ->with('success', 'Participant updated successfully.');
     }
 
-    /**
-     * Remove participant.
-     */
+    /* =======================================================
+       DELETE
+    ======================================================= */
     public function destroy(Event $event, Participant $participant): RedirectResponse
     {
+        abort_if($participant->event_id !== $event->id, 404);
         $this->authorize('update', $event);
-        if ($participant->event_id !== $event->id) abort(404);
 
         $participant->delete();
+
         return back()->with('success', 'Participant removed.');
     }
 
-    /**
-     * Export logic (Groups Roles and Types).
-     */
+    /* =======================================================
+       EXPORT CSV
+    ======================================================= */
     public function export(Event $event)
     {
         $this->authorize('update', $event);
 
-        $participants = $event->participants()->with('user.roles')->get();
-        $filename = "participants-{$event->slug}-" . now()->format('Ymd') . ".csv";
+        $participants = $event->participants()
+            ->with(['user.roles', 'employee'])
+            ->orderBy('created_at')
+            ->get();
 
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=$filename",
-        ];
+        $filename = "participants-{$event->slug}-" . now()->format('Y-m-d') . ".csv";
 
-        $callback = function () use ($participants) {
+        return response()->stream(function () use ($participants) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Name', 'Email', 'Type', 'Specific Role', 'Status', 'Committee Tags']);
+
+            fputcsv($file, [
+                'Name',
+                'Email',
+                'Type',
+                'Role',
+                'Status',
+                'System Roles',
+            ]);
 
             foreach ($participants as $p) {
                 fputcsv($file, [
-                    $p->name,
-                    $p->email,
+                    $p->display_name,
+                    $p->display_email,
                     ucfirst($p->type),
                     $p->role ?? 'N/A',
-                    $p->status,
-                    $p->user ? $p->user->roles->pluck('name')->implode(', ') : 'None'
+                    ucfirst($p->status),
+                    $p->user
+                        ? $p->user->roles->pluck('name')->implode(', ')
+                        : '—',
                 ]);
             }
-            fclose($file);
-        };
 
-        return response()->stream($callback, 200, $headers);
+            fclose($file);
+        }, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+        ]);
     }
 }

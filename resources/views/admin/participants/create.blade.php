@@ -1,115 +1,147 @@
 <x-app-layout>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
     <div class="space-y-6">
-        <!-- Breadcrumb -->
         <div class="flex items-center gap-2 text-sm text-gray-600">
-            <a href="{{ route('events.index') }}" class="hover:text-blue-600">Events</a>
+            <a href="{{ route('admin.participants.index') }}" class="hover:text-blue-600">Participants</a>
             <span>/</span>
-            <a href="{{ route('events.show', $event) }}" class="hover:text-blue-600">{{ $event->title }}</a>
-            <span>/</span>
-            <a href="{{ route('events.participants.index', $event) }}" class="hover:text-blue-600">Participants</a>
-            <span>/</span>
-            <span class="font-medium text-gray-900">Add Participant</span>
+            <span class="font-medium text-gray-900">Add to {{ $event->title }}</span>
         </div>
 
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Add Participant</h1>
-                <p class="mt-1 text-gray-600">Add a new participant to <strong>{{ $event->title }}</strong></p>
+                <p class="mt-1 text-gray-600">Event: <span class="font-semibold text-gray-800">{{ $event->title }}</span></p>
             </div>
-            <a href="{{ route('events.participants.index', $event) }}" class="text-gray-600 hover:text-gray-900">
+            <a href="{{ route('admin.participants.index') }}" class="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </a>
         </div>
 
-        <!-- Form -->
-        <div class="rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
-            <form action="{{ route('events.participants.store', $event) }}" method="POST" class="space-y-6">
+        <div class="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div class="border-b border-gray-100 bg-gray-50/50 px-8 py-4">
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Participant Details</h2>
+            </div>
+
+            <form action="{{ route('admin.events.participants.store', $event) }}" method="POST" class="p-8 space-y-6">
                 @csrf
 
-                <!-- Name -->
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-900">Name <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" id="name" value="{{ old('name') }}" placeholder="Enter participant name" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 @error('name') border-red-500 @enderror">
-                    @error('name')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Email -->
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-900">Email <span class="text-red-500">*</span></label>
-                    <input type="email" name="email" id="email" value="{{ old('email') }}" placeholder="Enter email address" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 @error('email') border-red-500 @enderror">
-                    @error('email')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- User Selection -->
-                <div>
-                    <label for="user_id" class="block text-sm font-medium text-gray-900">Link to User (Optional)</label>
-                    <select name="user_id" id="user_id" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 @error('user_id') border-red-500 @enderror">
-                        <option value="">-- Select a user --</option>
-                        @foreach($users as $u)
-                            <option value="{{ $u->id }}" {{ old('user_id') == $u->id ? 'selected' : '' }}>
-                                {{ $u->name }} ({{ $u->email }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('user_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <!-- Phone -->
-                    <div>
-                        <label for="phone" class="block text-sm font-medium text-gray-900">Phone</label>
-                        <input type="text" name="phone" id="phone" value="{{ old('phone') }}" placeholder="Enter phone number" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 @error('phone') border-red-500 @enderror">
-                        @error('phone')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {{-- Searchable User Selection --}}
+                    <div class="md:col-span-2">
+                        <label for="user_id" class="block text-sm font-medium text-gray-900">Search System User</label>
+                        <select name="user_id" id="user_id" placeholder="Start typing a name or email..." autocomplete="off">
+                            <option value="">-- Manual Entry (Not a system user) --</option>
+                            @foreach($users as $u)
+                                <option value="{{ $u->id }}" 
+                                        data-name="{{ $u->name }}" 
+                                        data-email="{{ $u->email }}"
+                                        {{ old('user_id') == $u->id ? 'selected' : '' }}>
+                                    {{ $u->name }} ({{ $u->email }})
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
-                    <!-- Role -->
+                    {{-- Full Name --}}
                     <div>
-                        <label for="role" class="block text-sm font-medium text-gray-900">Role</label>
-                        <input type="text" name="role" id="role" value="{{ old('role') }}" placeholder="e.g., Speaker, Attendee" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 @error('role') border-red-500 @enderror">
-                        @error('role')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <label for="name" class="block text-sm font-medium text-gray-900">Full Name</label>
+                        <input type="text" name="name" id="name" value="{{ old('name') }}" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 @error('name') border-red-500 @enderror">
+                        @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    {{-- Email --}}
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-900">Email Address</label>
+                        <input type="email" name="email" id="email" value="{{ old('email') }}" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 @error('email') border-red-500 @enderror">
+                        @error('email') <p class="mt-1 text-sm text-red-600">{{ $message }} @enderror
+                    </div>
+
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-900">Phone Number</label>
+                        <input type="text" name="phone" id="phone" value="{{ old('phone') }}" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="role" class="block text-sm font-medium text-gray-900">Event Role</label>
+                        <input type="text" name="role" id="role" value="{{ old('role') }}" placeholder="e.g. Speaker" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="type" class="block text-sm font-medium text-gray-900">Classification</label>
+                        <select name="type" id="type" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm">
+                            <option value="participant" {{ old('type') == 'participant' ? 'selected' : '' }}>Participant</option>
+                            <option value="committee" {{ old('type') == 'committee' ? 'selected' : '' }}>Committee</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-900">Status</label>
+                        <select name="status" id="status" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm">
+                            <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="confirmed" {{ old('status', 'confirmed') == 'confirmed' ? 'selected' : '' }}>Confirmed</option>
+                            <option value="attended" {{ old('status') == 'attended' ? 'selected' : '' }}>Attended</option>
+                            <option value="absent" {{ old('status') == 'absent' ? 'selected' : '' }}>Absent</option>
+                        </select>
                     </div>
                 </div>
 
-                <!-- Type -->
-                <div>
-                    <label for="type" class="block text-sm font-medium text-gray-900">Type</label>
-                    <select name="type" id="type" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 @error('type') border-red-500 @enderror">
-                        <option value="">-- Select type --</option>
-                        <option value="committee" {{ old('type') == 'committee' ? 'selected' : '' }}>Committee</option>
-                        <option value="speaker" {{ old('type') == 'speaker' ? 'selected' : '' }}>Speaker</option>
-                        <option value="attendee" {{ old('type') == 'attendee' ? 'selected' : '' }}>Attendee</option>
-                        <option value="staff" {{ old('type') == 'staff' ? 'selected' : '' }}>Staff</option>
-                    </select>
-                    @error('type')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Buttons -->
-                <div class="flex gap-3 pt-4">
-                    <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 font-medium text-white hover:bg-blue-700">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        Add Participant
+                <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-6">
+                    <a href="{{ route('admin.participants.index') }}" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</a>
+                    <button type="submit" class="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                        Confirm & Add Participant
                     </button>
-                    <a href="{{ route('events.participants.index', $event) }}" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-6 py-2.5 font-medium text-gray-700 hover:bg-gray-50">
-                        Cancel
-                    </a>
                 </div>
             </form>
         </div>
     </div>
+
+    {{-- Initialization Script --}}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Initialize Searchable Dropdown
+            const userSelect = new TomSelect("#user_id", {
+                create: false,
+                sortField: { field: "text", direction: "asc" }
+            });
+
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+
+            // Handle Auto-fill
+            userSelect.on('change', function(value) {
+                const selectedOption = userSelect.options[value];
+                
+                if (selectedOption) {
+                    // Extract data from the original option element
+                    const originalOption = document.querySelector(`#user_id option[value="${value}"]`);
+                    if (originalOption) {
+                        nameInput.value = originalOption.dataset.name || '';
+                        emailInput.value = originalOption.dataset.email || '';
+                    }
+                } else {
+                    // Reset if manual entry is selected
+                    nameInput.value = '';
+                    emailInput.value = '';
+                }
+            });
+        });
+    </script>
+
+    {{-- Add some Tom Select styling fixes for Tailwind --}}
+    <style>
+        .ts-control {
+            border-radius: 0.5rem !important;
+            padding: 0.5rem 0.75rem !important;
+            border: 1px solid #d1d5db !important;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+        }
+        .ts-wrapper.focus .ts-control {
+            border-color: #3b82f6 !important;
+            ring: 2px #3b82f6 !important;
+        }
+    </style>
 </x-app-layout>

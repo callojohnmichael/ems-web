@@ -221,29 +221,45 @@ class EventController extends Controller
 
 
 
+public function show(Event $event): View
+{
+    $this->authorize('view', $event);
 
-        public function show(Event $event): View
-            {
-                $this->authorize('view', $event);
+    $event->load([
+        'requestedBy',
+        'venue',
+        'logisticsItems',
+        'budget',
+        'participants.employee',
+        'participants.user', // Ensure user is loaded for display_name logic
+        'histories.user',
+        'custodianRequests.custodianMaterial',
+        'financeRequest'
+    ]);
 
-                $event->load([
-                    'requestedBy',
-                    'venue',
-                    'logisticsItems', // 🔥 changed
-                    'budget',
-                    'participants.employee',
-                    'histories.user',
-                    'custodianRequests.custodianMaterial',
-                    'financeRequest'
-                ]);
+    // Group participants by their type attribute
+    $groupedParticipants = $event->participants->groupBy('type');
 
-                // Participant stats
-                $participantCount = $event->participants()->count();
-                $attendedCount = $event->participants()->where('status', 'attended')->count();
-                $absentCount = $event->participants()->where('status', 'absent')->count();
+    $committees = $groupedParticipants->get('committee', collect());
+    $standardParticipants = $groupedParticipants->get('participant', collect());
 
-                return view('events.show', compact('event', 'participantCount', 'attendedCount', 'absentCount'));
-            }
+    // Stats
+    $participantCount = $event->participants()->count();
+    $attendedCount = $event->participants()->where('status', 'attended')->count();
+    $absentCount = $event->participants()->where('status', 'absent')->count();
+
+    return view('events.show', compact(
+        'event', 
+        'committees', 
+        'standardParticipants', 
+        'participantCount', 
+        'attendedCount', 
+        'absentCount'
+    ));
+}
+   
+   
+   
 
 
         public function edit(Event $event): View
