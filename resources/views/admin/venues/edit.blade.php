@@ -5,7 +5,7 @@
                 Edit Venue: {{ $venue->name }}
             </h2>
 
-            <a href="{{ route('admin.venues.show', $venue) }}"
+            <a href="{{ route('admin.venues.index') }}"
                class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-200 transition">
                 ← Back
             </a>
@@ -13,7 +13,7 @@
     </x-slot>
 
     <div class="py-10">
-        <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
 
             {{-- Validation Errors --}}
             @if ($errors->any())
@@ -24,13 +24,6 @@
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>
-                </div>
-            @endif
-
-            {{-- Warning if Upcoming Events --}}
-            @if($upcomingEventsCount > 0)
-                <div class="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg">
-                    ⚠️ This venue has {{ $upcomingEventsCount }} upcoming event(s). Changes will affect those events.
                 </div>
             @endif
 
@@ -89,26 +82,96 @@
                         @enderror
                     </div>
 
-                    {{-- Facilities --}}
+                    {{-- Campuses with Facilities & Amenities --}}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-4">
+                            Select Campus, Facilities & Amenities
+                        </label>
+                        <div class="space-y-4">
+                            @forelse($campuses as $campus)
+                                <div class="border border-indigo-200 rounded-lg p-4 bg-indigo-50">
+                                    {{-- Campus Checkbox --}}
+                                    <label class="flex items-center mb-4 cursor-pointer">
+                                        <input type="checkbox" 
+                                               name="campuses[]" 
+                                               value="{{ $campus->id }}"
+                                               class="campus-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 cursor-pointer"
+                                               data-campus-id="{{ $campus->id }}"
+                                               @if(in_array($campus->id, $selectedCampusIds)) checked @endif>
+                                        <span class="ml-3 text-sm font-semibold text-gray-900">{{ $campus->name }}</span>
+                                        @if($campus->location)
+                                            <span class="ml-2 text-xs text-gray-600">({{ $campus->location }})</span>
+                                        @endif
+                                    </label>
+
+                                    {{-- Facilities for this Campus --}}
+                                    <div class="ml-6 space-y-3 campus-facilities" data-campus-id="{{ $campus->id }}">
+                                        @forelse($campus->facilities as $facility)
+                                            <div class="border border-gray-300 rounded-lg p-3 bg-white">
+                                                {{-- Facility Checkbox --}}
+                                                <label class="flex items-center mb-2 cursor-pointer">
+                                                    <input type="checkbox" 
+                                                           name="facilities[{{ $campus->id }}][]" 
+                                                           value="{{ $facility->id }}"
+                                                           class="facility-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 cursor-pointer"
+                                                           data-campus-id="{{ $campus->id }}"
+                                                           @if(!in_array($campus->id, $selectedCampusIds)) disabled @endif>
+                                                    <span class="ml-3 text-sm font-medium text-gray-800">{{ $facility->name }}</span>
+                                                    @if($facility->capacity)
+                                                        <span class="ml-2 text-xs text-gray-500">(Capacity: {{ $facility->capacity }})</span>
+                                                    @endif
+                                                </label>
+
+                                                {{-- Amenities for this Facility --}}
+                                                @if($facility->amenities->count())
+                                                    <div class="ml-6 mt-2 space-y-2 flex flex-wrap gap-2">
+                                                        @foreach($facility->amenities as $amenity)
+                                                            <label class="flex items-center cursor-pointer inline-flex px-3 py-1 bg-gray-100 rounded-full text-xs">
+                                                                <input type="checkbox" 
+                                                                       name="amenities[{{ $facility->id }}][]" 
+                                                                       value="{{ $amenity->id }}"
+                                                                       class="amenity-checkbox rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 cursor-pointer"
+                                                                       data-facility-id="{{ $facility->id }}"
+                                                                       @if(!in_array($campus->id, $selectedCampusIds)) disabled @endif>
+                                                                <span class="ml-2 text-gray-700">{{ $amenity->name }}</span>
+                                                            </label>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @empty
+                                            <p class="text-xs text-gray-500 italic">No facilities available for this campus.</p>
+                                        @endforelse
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="text-sm text-gray-500 italic col-span-full">No campuses available. Please create campuses first.</p>
+                            @endforelse
+                        </div>
+                        @error('campuses')
+                            <p class="mt-2 text-sm text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Additional Facilities Description --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Facilities & Amenities
+                            Additional Facilities & Notes
                         </label>
                         <textarea name="facilities"
-                                  rows="4"
-                                  placeholder="e.g., WiFi, Projector, Sound System, Air Conditioning, Parking, Restrooms"
+                                  rows="3"
+                                  placeholder="Any other facilities or special notes about this venue"
                                   class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">{{ old('facilities', $venue->facilities) }}</textarea>
                         @error('facilities')
                             <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                         @enderror
-                        <p class="mt-1 text-xs text-gray-500">Describe the amenities and facilities available at this venue</p>
                     </div>
 
                 </div>
 
                 {{-- Footer Actions --}}
                 <div class="px-6 py-4 border-t bg-gray-50 flex items-center justify-end space-x-3 rounded-b-xl">
-                    <a href="{{ route('admin.venues.show', $venue) }}"
+                    <a href="{{ route('admin.venues.index') }}"
                        class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-100 transition">
                         Cancel
                     </a>
@@ -123,4 +186,45 @@
         </div>
     </div>
 
-</x-app-layout>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle campus checkbox changes
+            document.querySelectorAll('.campus-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const campusId = this.dataset.campusId;
+                    const facilitiesContainer = document.querySelector(`.campus-facilities[data-campus-id="${campusId}"]`);
+                    
+                    if (facilitiesContainer) {
+                        const facilityCheckboxes = facilitiesContainer.querySelectorAll('.facility-checkbox');
+                        const amenityCheckboxes = facilitiesContainer.querySelectorAll('.amenity-checkbox');
+                        
+                        // Enable/disable facilities
+                        facilityCheckboxes.forEach(cb => {
+                            cb.disabled = !this.checked;
+                            if (!this.checked) cb.checked = false;
+                        });
+                        
+                        // Enable/disable amenities
+                        amenityCheckboxes.forEach(cb => {
+                            cb.disabled = !this.checked;
+                            if (!this.checked) cb.checked = false;
+                        });
+                    }
+                });
+            });
+
+            // Handle facility checkbox changes
+            document.querySelectorAll('.facility-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const facilityId = this.dataset.facilityId;
+                    const amenityCheckboxes = document.querySelectorAll(`.amenity-checkbox[data-facility-id="${facilityId}"]`);
+                    
+                    // Enable/disable amenities based on facility selection
+                    amenityCheckboxes.forEach(cb => {
+                        cb.disabled = !this.checked;
+                        if (!this.checked) cb.checked = false;
+                    });
+                });
+            });
+        });
+    </script>
