@@ -7,216 +7,176 @@ use App\Models\Event;
 use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ParticipantController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
-     * Display a listing of all participants (optionally filtered by event).
+     * Display participants grouped by Event with Committee details.
      */
-    public function index(Event $event = null)
+    public function index(Request $request): View
     {
         $user = auth()->user();
-        $canManageParticipants = $user->isAdmin() || $user->hasPermissionTo('manage participants');
+        $isAdmin = $user->isAdmin();
 
-        if ($event) {
-            // Show participants for a specific event
-            $participants = $event->participants()->paginate(15);
-            return view('admin.participants.index', [
-                'event' => $event,
-                'participants' => $participants,
-                'canManageParticipants' => $canManageParticipants,
-            ]);
+        // 1. Fetch Events (Scoped to owner if not admin)
+        // We load participants with their user roles and employee details
+        $eventsQuery = Event::with(['participants.user.roles', 'participants.employee']);
+
+        if (!$isAdmin) {
+            $eventsQuery->where('user_id', $user->id);
         }
 
-        // Show all participants across all events
-        $participants = Participant::with('event', 'user')->paginate(15);
-        return view('admin.participants.index', [
-            'participants' => $participants,
-            'canManageParticipants' => $canManageParticipants,
-        ]);
+        $events = $eventsQuery->orderBy('start_at', 'desc')->paginate(10);
+
+        // 2. Statistics for the Header
+        // Shows totals for all events the user has access to
+        $statsQuery = Participant::query();
+        if (!$isAdmin) {
+            $statsQuery->whereHas('event', fn($q) => $q->where('user_id', $user->id));
+        }
+
+        $totalParticipants = $statsQuery->count();
+        $totalRegistered = $statsQuery->where('status', 'confirmed')->count();
+        $canManageParticipants = $isAdmin || $user->hasPermissionTo('manage participants');
+
+        return view('admin.participants.index', compact(
+            'events',
+            'totalParticipants',
+            'totalRegistered',
+            'canManageParticipants'
+        ));
     }
 
     /**
-     * Show the form for creating a new participant.
+     * Show form to add participant - Restricted to Published events.
      */
-    public function create(Event $event)
+    public function create(Event $event): View|RedirectResponse
     {
         $this->authorize('update', $event);
-        
-        if ($event->status !== 'published') {
-            return back()->withErrors('Participants can only be added to published events.');
-        }
-        
-        $users = User::all();
-        $canManageParticipants = auth()->user()->isAdmin() || auth()->user()->hasPermissionTo('manage participants');
 
-        return view('admin.participants.create', [
-            'event' => $event,
-            'users' => $users,
-            'canManageParticipants' => $canManageParticipants,
-        ]);
+        // Strict Check: Only published events can accept new participants (Admin override)
+        if ($event->status !== 'published' && !auth()->user()->isAdmin()) {
+            return back()->withErrors('Registration is closed. This event is not currently "Published".');
+        }
+
+        $users = User::with('roles')->get(); 
+        return view('admin.participants.create', compact('event', 'users'));
     }
 
     /**
-     * Store a newly created participant in storage.
+     * Store participant with Employee and Type info.
      */
-    public function store(Request $request, Event $event)
+    public function store(Request $request, Event $event): RedirectResponse
     {
         $this->authorize('update', $event);
 
-        if ($event->status !== 'published') {
-            return back()->withErrors('Participants can only be added to published events.');
+        if ($event->status !== 'published' && !auth()->user()->isAdmin()) {
+            return back()->withErrors('Cannot add participants to an unpublished event.');
         }
 
         $validated = $request->validate([
-            'user_id' => 'nullable|exists:users,id',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:32',
-            'role' => 'nullable|string|max:255',
-            'type' => 'nullable|string|max:255',
+            'user_id'     => 'nullable|exists:users,id',
+            'employee_id' => 'nullable|exists:employees,id',
+            'name'        => 'required|string|max:255',
+            'email'       => 'required|email|max:255',
+            'phone'       => 'nullable|string|max:32',
+            'role'        => 'nullable|string|max:255', 
+            'type'        => 'required|string|in:participant,committee',
+            'status'      => 'required|in:pending,confirmed,attended,absent',
         ]);
 
-        $participant = $event->participants()->create($validated);
+        $event->participants()->create($validated);
 
         return redirect()
-            ->route('events.participants.index', $event)
-            ->with('success', "Participant '{$validated['name']}' has been added to the event.");
+            ->route('admin.participants.index')
+            ->with('success', "{$validated['name']} added successfully.");
     }
 
     /**
-     * Display the specified participant.
+     * Show specific participant details.
      */
-    public function show(Event $event, Participant $participant)
+    public function show(Event $event, Participant $participant): View
     {
-        // Ensure participant belongs to event
-        if ($participant->event_id !== $event->id) {
-            abort(404);
+        if ($participant->event_id !== $event->id) abort(404);
+        
+        // Ownership check: Can only view if Admin or Event Owner
+        if (!auth()->user()->isAdmin() && $event->user_id !== auth()->id()) {
+            abort(403);
         }
 
-        $canManageParticipants = auth()->user()->isAdmin() || auth()->user()->hasPermissionTo('manage participants');
-
-        return view('admin.participants.show', [
-            'event' => $event,
-            'participant' => $participant,
-            'canManageParticipants' => $canManageParticipants,
-        ]);
+        $participant->load(['user.roles', 'employee', 'attendances']);
+        return view('admin.participants.show', compact('event', 'participant'));
     }
 
     /**
-     * Show the form for editing the specified participant.
+     * Edit participant - Restricted to Published events.
      */
-    public function edit(Event $event, Participant $participant)
+    public function edit(Event $event, Participant $participant): View|RedirectResponse
     {
-        // Ensure participant belongs to event
-        if ($participant->event_id !== $event->id) {
-            abort(404);
-        }
-
+        if ($participant->event_id !== $event->id) abort(404);
         $this->authorize('update', $event);
 
-        if ($event->status !== 'published') {
-            return back()->withErrors('Participants can only be edited for published events.');
+        if ($event->status !== 'published' && !auth()->user()->isAdmin()) {
+            return back()->withErrors('Modifications are locked while the event is not Published.');
         }
 
-        $users = User::all();
-        $canManageParticipants = auth()->user()->isAdmin() || auth()->user()->hasPermissionTo('manage participants');
-
-        return view('admin.participants.edit', [
-            'event' => $event,
-            'participant' => $participant,
-            'users' => $users,
-            'canManageParticipants' => $canManageParticipants,
-        ]);
+        return view('admin.participants.edit', compact('event', 'participant'));
     }
 
     /**
-     * Update the specified participant in storage.
+     * Update participant record.
      */
-    public function update(Request $request, Event $event, Participant $participant)
+    public function update(Request $request, Event $event, Participant $participant): RedirectResponse
     {
-        // Ensure participant belongs to event
-        if ($participant->event_id !== $event->id) {
-            abort(404);
-        }
-
+        if ($participant->event_id !== $event->id) abort(404);
         $this->authorize('update', $event);
 
-        if ($event->status !== 'published') {
-            return back()->withErrors('Participants can only be edited for published events.');
+        if ($event->status !== 'published' && !auth()->user()->isAdmin()) {
+            return back()->withErrors('Updates are locked for this event status.');
         }
 
         $validated = $request->validate([
-            'user_id' => 'nullable|exists:users,id',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:32',
-            'role' => 'nullable|string|max:255',
-            'type' => 'nullable|string|max:255',
-            'status' => 'nullable|string|in:pending,confirmed,attended,absent',
+            'name'   => 'required|string|max:255',
+            'email'  => 'required|email|max:255',
+            'status' => 'required|in:pending,confirmed,attended,absent',
+            'role'   => 'nullable|string|max:255',
+            'type'   => 'required|string|in:participant,committee',
         ]);
 
         $participant->update($validated);
 
         return redirect()
-            ->route('events.participants.show', [$event, $participant])
-            ->with('success', "Participant has been updated successfully.");
+            ->route('admin.participants.index')
+            ->with('success', 'Participant updated.');
     }
 
     /**
-     * Remove the specified participant from storage.
+     * Remove participant.
      */
-    public function destroy(Event $event, Participant $participant)
+    public function destroy(Event $event, Participant $participant): RedirectResponse
     {
-        // Ensure participant belongs to event
-        if ($participant->event_id !== $event->id) {
-            abort(404);
-        }
-
         $this->authorize('update', $event);
+        if ($participant->event_id !== $event->id) abort(404);
 
-        $name = $participant->name;
         $participant->delete();
-
-        return redirect()
-            ->route('events.participants.index', $event)
-            ->with('success', "Participant '{$name}' has been removed from the event.");
+        return back()->with('success', 'Participant removed.');
     }
 
     /**
-     * Bulk update participant statuses.
-     */
-    public function bulkUpdateStatus(Request $request, Event $event)
-    {
-        $this->authorize('update', $event);
-
-        $validated = $request->validate([
-            'participant_ids' => 'required|array',
-            'participant_ids.*' => 'integer|exists:participants,id',
-            'status' => 'required|string|in:pending,confirmed,attended,absent',
-        ]);
-
-        $updated = $event->participants()
-            ->whereIn('id', $validated['participant_ids'])
-            ->update(['status' => $validated['status']]);
-
-        return redirect()
-            ->route('events.participants.index', $event)
-            ->with('success', "{$updated} participants' status has been updated.");
-    }
-
-    /**
-     * Export participants to CSV.
+     * Export logic (Groups Roles and Types).
      */
     public function export(Event $event)
     {
         $this->authorize('update', $event);
 
-        $participants = $event->participants()->get();
+        $participants = $event->participants()->with('user.roles')->get();
+        $filename = "participants-{$event->slug}-" . now()->format('Ymd') . ".csv";
 
-        $filename = "participants-{$event->id}-" . now()->format('Y-m-d-His') . ".csv";
-        
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=$filename",
@@ -224,23 +184,18 @@ class ParticipantController extends Controller
 
         $callback = function () use ($participants) {
             $file = fopen('php://output', 'w');
-            
-            // Headers
-            fputcsv($file, ['Name', 'Email', 'Phone', 'Role', 'Type', 'Status', 'Registered At']);
+            fputcsv($file, ['Name', 'Email', 'Type', 'Specific Role', 'Status', 'Committee Tags']);
 
-            // Data
-            foreach ($participants as $participant) {
+            foreach ($participants as $p) {
                 fputcsv($file, [
-                    $participant->name,
-                    $participant->email,
-                    $participant->phone,
-                    $participant->role,
-                    $participant->type,
-                    $participant->status,
-                    $participant->registered_at,
+                    $p->name,
+                    $p->email,
+                    ucfirst($p->type),
+                    $p->role ?? 'N/A',
+                    $p->status,
+                    $p->user ? $p->user->roles->pluck('name')->implode(', ') : 'None'
                 ]);
             }
-
             fclose($file);
         };
 

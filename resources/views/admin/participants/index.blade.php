@@ -1,157 +1,183 @@
 <x-app-layout>
-    <div class="space-y-6">
-        <!-- Header with breadcrumb -->
-        <div class="flex items-center justify-between">
+    <div class="space-y-8">
+        <div class="sm:flex sm:items-center sm:justify-between">
             <div>
-                @if(isset($event))
-                    <div class="mb-3 flex items-center gap-2 text-sm text-gray-600">
-                        <a href="{{ route('events.index') }}" class="hover:text-blue-600">Events</a>
-                        <span>/</span>
-                        <a href="{{ route('events.show', $event) }}" class="hover:text-blue-600">{{ $event->title }}</a>
-                        <span>/</span>
-                        <span class="font-medium text-gray-900">Participants</span>
-                    </div>
-                    <h1 class="text-2xl font-bold text-gray-900">Participants for {{ $event->title }}</h1>
-                @else
-                    <h1 class="text-2xl font-bold text-gray-900">All Participants</h1>
-                @endif
+                <h1 class="text-2xl font-bold text-gray-900">Event Participant Overview</h1>
+                <p class="text-sm text-gray-500">Breakdown of committees and attendees per event.</p>
             </div>
-            
-            @if($canManageParticipants && isset($event))
-                <div class="flex gap-2">
-                    <a href="{{ route('events.participants.create', $event) }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        Add Participant
-                    </a>
-                    <a href="{{ route('events.participants.export', $event) }}" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                        </svg>
-                        Export CSV
-                    </a>
+
+            <div class="flex gap-4">
+                <div class="bg-white border px-4 py-2 rounded-lg shadow-sm">
+                    <span class="text-xs text-gray-500 uppercase font-bold">Total Participants</span>
+                    <span class="block text-xl font-black text-blue-600">{{ $totalParticipants }}</span>
                 </div>
-            @endif
+                <div class="bg-white border px-4 py-2 rounded-lg shadow-sm">
+                    <span class="text-xs text-gray-500 uppercase font-bold">Confirmed</span>
+                    <span class="block text-xl font-black text-green-600">{{ $totalRegistered }}</span>
+                </div>
+            </div>
         </div>
 
-        <!-- Success Message -->
-        @if(session('success'))
-            <div class="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-                {{ session('success') }}
-            </div>
-        @endif
+        @forelse($events as $event)
+            @php
+                $committees = $event->participants->where('type', 'committee');
+                $participants = $event->participants->where('type', 'participant');
+            @endphp
 
-        <!-- Participants Table -->
-        <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            @forelse($participants as $participant)
-                @if($loop->first)
-                    <table class="w-full">
-                        <thead class="border-b border-gray-200 bg-gray-50">
+            <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">{{ $event->title }}</h2>
+                        <div class="flex items-center gap-3 mt-1">
+                            <span class="text-xs font-medium text-gray-500">
+                                {{ $event->start_at->format('M d, Y') }}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $event->status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                                {{ $event->status }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-6">
+                        <div class="text-center">
+                            <span class="block text-sm font-bold text-gray-900">{{ $committees->count() }}</span>
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">Committee</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-sm font-bold text-gray-900">{{ $event->participants->count() }}</span>
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">Total Participants</span>
+                        </div>
+
+                        @if($event->status === 'published' || auth()->user()->isAdmin())
+                            <a href="{{ route('events.participants.create', $event) }}"
+                               class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-md hover:bg-blue-700 transition">
+                                + Add
+                            </a>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-25 border-b border-gray-100">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Email</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Phone</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Role</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
-                                @if(!isset($event))
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Event</th>
-                                @endif
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Registered</th>
-                                <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600">Actions</th>
+                                <th class="px-6 py-3 text-gray-600 font-semibold uppercase text-[10px]">Name</th>
+                                <th class="px-6 py-3 text-gray-600 font-semibold uppercase text-[10px]">Role/Type</th>
+                                <th class="px-6 py-3 text-gray-600 font-semibold uppercase text-[10px]">Status</th>
+                                <th class="px-6 py-3 text-right text-gray-600 font-semibold uppercase text-[10px]">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
-                @endif
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $participant->name }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-600">{{ $participant->email }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-600">{{ $participant->phone ?? '-' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-600">
-                                    @if($participant->role)
-                                        <span class="inline-block rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
-                                            {{ $participant->role }}
-                                        </span>
-                                    @else
-                                        <span class="text-gray-400">-</span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-sm">
-                                    @php
-                                        $statusColors = [
-                                            'pending' => 'bg-yellow-100 text-yellow-800',
-                                            'confirmed' => 'bg-blue-100 text-blue-800',
-                                            'attended' => 'bg-green-100 text-green-800',
-                                            'absent' => 'bg-red-100 text-red-800',
-                                        ];
-                                    @endphp
-                                    <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium {{ $statusColors[$participant->status] ?? 'bg-gray-100 text-gray-800' }}">
-                                        {{ ucfirst($participant->status) }}
-                                    </span>
-                                </td>
-                                @if(!isset($event))
-                                    <td class="px-6 py-4 text-sm text-gray-600">
-                                        <a href="{{ route('events.show', $participant->event) }}" class="text-blue-600 hover:underline">
-                                            {{ $participant->event->title }}
-                                        </a>
-                                    </td>
-                                @endif
-                                <td class="px-6 py-4 text-sm text-gray-600">
-                                    {{ $participant->registered_at?->format('M d, Y') ?? '-' }}
-                                </td>
-                                <td class="px-6 py-4 text-center">
-                                    <div class="flex justify-center gap-2">
-                                        @if(isset($event))
-                                            <a href="{{ route('events.participants.show', [$event, $participant]) }}" class="text-blue-600 hover:text-blue-900">
-                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                                </svg>
-                                            </a>
-                                            @if($canManageParticipants)
-                                                <a href="{{ route('events.participants.edit', [$event, $participant]) }}" class="text-orange-600 hover:text-orange-900">
-                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                    </svg>
-                                                </a>
-                                                <form method="POST" action="{{ route('events.participants.destroy', [$event, $participant]) }}" style="display: inline;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to remove this participant?');">
-                                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                        </svg>
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        @endif
-                                    </div>
+
+                        <tbody class="divide-y divide-gray-50">
+
+                        {{-- ================= COMMITTEE SECTION ================= --}}
+                        @if($committees->count())
+                            <tr class="bg-orange-50">
+                                <td colspan="4" class="px-6 py-2 text-[11px] font-bold text-orange-700 uppercase tracking-wider">
+                                    Committee Members
                                 </td>
                             </tr>
-                @if($loop->last)
+
+                            @foreach($committees as $participant)
+                                <tr class="hover:bg-orange-50/40 transition-colors">
+                                    <td class="px-6 py-3">
+                                        <div class="font-medium text-gray-900">{{ $participant->name }}</div>
+                                        <div class="flex gap-1 mt-1">
+                                            @if($participant->user && $participant->user->roles->count())
+                                                @foreach($participant->user->roles as $role)
+                                                    <span class="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold">
+                                                        {{ strtoupper($role->name) }}
+                                                    </span>
+                                                @endforeach
+                                            @endif
+                                        </div>
+                                    </td>
+
+                                    <td class="px-6 py-3">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-orange-100 text-orange-700 border border-orange-200">
+                                            Committee
+                                        </span>
+                                        @if($participant->role)
+                                            <div class="text-[10px] text-gray-400 mt-0.5 italic">{{ $participant->role }}</div>
+                                        @endif
+                                    </td>
+
+                                    <td class="px-6 py-3">
+                                        <span class="inline-flex items-center text-xs font-semibold {{ $participant->status === 'confirmed' ? 'text-green-600' : 'text-gray-400' }}">
+                                            <span class="h-1.5 w-1.5 rounded-full mr-1.5 {{ $participant->status === 'confirmed' ? 'bg-green-500' : 'bg-gray-300' }}"></span>
+                                            {{ ucfirst($participant->status) }}
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-3 text-right">
+                                        @if(auth()->user()->isAdmin() || ($event->user_id === auth()->id() && $event->status === 'published'))
+                                            <div class="flex justify-end gap-3">
+                                                <a href="{{ route('events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
+                                            </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @endif
+
+
+                        {{-- ================= PARTICIPANTS SECTION ================= --}}
+                        @if($participants->count())
+                            <tr class="bg-gray-50">
+                                <td colspan="4" class="px-6 py-2 text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                                    Participants
+                                </td>
+                            </tr>
+
+                            @foreach($participants as $participant)
+                                <tr class="hover:bg-blue-50/30 transition-colors">
+                                    <td class="px-6 py-3 font-medium text-gray-900">{{ $participant->name }}</td>
+
+                                    <td class="px-6 py-3">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-gray-100 text-gray-600">
+                                            Participant
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-3">
+                                        <span class="inline-flex items-center text-xs font-semibold {{ $participant->status === 'confirmed' ? 'text-green-600' : 'text-gray-400' }}">
+                                            <span class="h-1.5 w-1.5 rounded-full mr-1.5 {{ $participant->status === 'confirmed' ? 'bg-green-500' : 'bg-gray-300' }}"></span>
+                                            {{ ucfirst($participant->status) }}
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-3 text-right">
+                                        @if(auth()->user()->isAdmin() || ($event->user_id === auth()->id() && $event->status === 'published'))
+                                            <div class="flex justify-end gap-3">
+                                                <a href="{{ route('events.participants.edit', [$event, $participant]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
+                                            </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @endif
+
+                        {{-- EMPTY --}}
+                        @if(!$committees->count() && !$participants->count())
+                            <tr>
+                                <td colspan="4" class="px-6 py-4 text-center text-xs text-gray-400 italic">
+                                    No participants registered for this event.
+                                </td>
+                            </tr>
+                        @endif
+
                         </tbody>
                     </table>
-                @endif
-            @empty
-                <div class="px-6 py-12 text-center">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20a9 9 0 0118 0v-2a9 9 0 00-18 0v2z"></path>
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">No participants</h3>
-                    @if($canManageParticipants && isset($event))
-                        <p class="mt-1 text-sm text-gray-500">Get started by adding a participant to this event.</p>
-                    @else
-                        <p class="mt-1 text-sm text-gray-500">No participants found.</p>
-                    @endif
                 </div>
-            @endforelse
-        </div>
-
-        <!-- Pagination -->
-        @if($participants->hasPages())
-            <div class="flex justify-center">
-                {{ $participants->links() }}
             </div>
-        @endif
+        @empty
+            <div class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed">
+                <p class="text-gray-500">No events found under your management.</p>
+            </div>
+        @endforelse
+
+        <div class="mt-4">
+            {{ $events->links() }}
+        </div>
     </div>
 </x-app-layout>

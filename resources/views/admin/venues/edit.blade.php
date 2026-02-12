@@ -60,7 +60,7 @@
                     {{-- Address --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Address <span class="text-red-500">*</span>
+                            Address <span class="text-red-500">*</span> 
                         </label>
                         <textarea name="address"
                                   rows="3"
