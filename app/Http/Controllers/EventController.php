@@ -10,10 +10,6 @@ use App\Models\Resource;
 use App\Models\Employee;
 use App\Models\CustodianMaterial;
 use App\Models\EventLogisticsItem;
-
-
-
-
 use App\Services\EventService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -267,49 +263,50 @@ class EventController extends Controller
     /**
      * Show event.
      */
-   public function show(Event $event): View
-{
-    $this->authorize('view', $event);
+    public function show(Event $event): View
+    {
+        $this->authorize('view', $event);
 
-    $event->load([
-        'requestedBy',
-        'venue',
-        'logisticsItems',
-        'budget',
-        'participants.employee',
-        'participants.user',
-        'histories.user',
-        'custodianRequests.custodianMaterial',
-        'financeRequest',
-        'venueBookings.venueLocation',
-    ]);
+        $event->load([
+            'requestedBy',
+            'venue',
+            'logisticsItems',
+            'budget',
+            'participants.employee',
+            'participants.user',
+            'histories.user',
+            'custodianRequests.custodianMaterial',
+            'financeRequest',
+            'venueBookings.venueLocation',
+        ]);
 
-    $venues = Venue::with('locations')->orderBy('name')->get();
-    $resources = Resource::orderBy('name')->get();
-    
-    // --- ADD THIS LINE ---
-    $custodianMaterials = CustodianMaterialModel::orderBy('name')->get(); 
+        $venues = Venue::with('locations')->orderBy('name')->get();
+        $resources = Resource::orderBy('name')->get();
+        
+        // Corrected to use the standard CustodianMaterial model class
+        $custodianMaterials = CustodianMaterial::orderBy('name')->get(); 
 
-    $groupedParticipants = $event->participants->groupBy('type');
-    $committees = $groupedParticipants->get('committee', collect());
-    $standardParticipants = $groupedParticipants->get('participant', collect());
+        $groupedParticipants = $event->participants->groupBy('type');
+        $committees = $groupedParticipants->get('committee', collect());
+        $standardParticipants = $groupedParticipants->get('participant', collect());
 
-    $participantCount = $event->participants()->count();
-    $attendedCount = $event->participants()->where('status', 'attended')->count();
-    $absentCount = $event->participants()->where('status', 'absent')->count();
+        $participantCount = $event->participants()->count();
+        $attendedCount = $event->participants()->where('status', 'attended')->count();
+        $absentCount = $event->participants()->where('status', 'absent')->count();
 
-    return view('events.show', compact(
-        'event',
-        'committees',
-        'standardParticipants',
-        'participantCount',
-        'attendedCount',
-        'absentCount',
-        'venues',
-        'resources',
-        'custodianMaterials' // --- ADD THIS TO COMPACT ---
-    ));
-}
+        return view('events.show', compact(
+            'event',
+            'committees',
+            'standardParticipants',
+            'participantCount',
+            'attendedCount',
+            'absentCount',
+            'venues',
+            'resources',
+            'custodianMaterials'
+        ));
+    }
+
     /**
      * Edit.
      */
