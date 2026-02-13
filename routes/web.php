@@ -15,7 +15,7 @@ use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\ParticipantController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RolePermissionController;
-use App\Http\Controllers\VenueController;
+use App\Http\Controllers\Admin\VenueController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -59,7 +59,6 @@ Route::middleware('auth')->group(function () {
     // Media posts (general authenticated access) served by MultimediaController
     Route::get('/media/posts', [MultimediaController::class, 'posts'])->name('media.posts');
     Route::get('/media/posts/{post}', [MultimediaController::class, 'postsShow'])->name('media.posts.show');
-
 
     // Event ratings
     Route::post('/events/{event}/ratings', [\App\Http\Controllers\EventRatingController::class, 'store'])->name('events.ratings.store');
@@ -123,14 +122,14 @@ Route::middleware(['auth', 'role:admin'])
 
         // Admin Modules
         Route::resource('venues', VenueController::class);
-        
+
         // FIX: Prioritize nested resource so {event} is always captured
         Route::resource('events.participants', ParticipantController::class);
         Route::get('/events/{event}/participants/export', [ParticipantController::class, 'export'])->name('events.participants.export');
 
         // General participants list (Only for index/listing, avoiding create/store conflict)
         Route::get('/participants', [ParticipantController::class, 'index'])->name('participants.index');
-        
+
         Route::resource('reports', ReportController::class)->only(['index']);
         Route::resource('documents', DocumentController::class)->only(['index']);
 
