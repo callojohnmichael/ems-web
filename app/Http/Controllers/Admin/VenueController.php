@@ -18,16 +18,35 @@ class VenueController extends Controller
 {
     use AuthorizesRequests;
 
-    public function index(): View
-    {
-        $venues = Venue::withCount(['events' => function ($query) {
+    
+public function index(Request $request): View
+{
+    // Start query with eager loading counts
+    $query = Venue::withCount([
+        'events' => function ($query) {
             $query->whereIn('status', ['pending_approvals', 'approved', 'published']);
-        }, 'locations'])->orderBy('name')->get();
+        },
+        'locations'
+    ])->orderBy('name');
 
-        $canManageVenues = auth()->user()->isAdmin() || auth()->user()->hasPermissionTo('manage venues');
-
-        return view('admin.venues.index', compact('venues', 'canManageVenues'));
+    // Apply search filter if present
+    if ($request->has('search') && $request->search) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('address', 'like', "%{$search}%")
+              ->orWhere('facilities', 'like', "%{$search}%");
+        });
     }
+
+    // Get venues
+    $venues = $query->get();
+
+    // Determine if current user can manage venues
+    $canManageVenues = auth()->user()->isAdmin() || auth()->user()->hasPermissionTo('manage venues');
+
+    return view('admin.venues.index', compact('venues', 'canManageVenues'));
+}
 
     public function create(): View
     {

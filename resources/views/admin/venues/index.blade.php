@@ -2,7 +2,7 @@
 <div class="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
 
     {{-- ================= HEADER ================= --}}
-    <div class="flex justify-between items-center mb-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Venue Management</h1>
             <p class="mt-1 text-sm text-gray-500">
@@ -10,19 +10,34 @@
             </p>
         </div>
 
-        @can('create', \App\Models\Venue::class)
-            <a href="{{ route('admin.venues.create') }}"
-               class="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition">
-                + Create Venue
-            </a>
-        @endcan
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-3 w-full md:w-auto">
+            {{-- Search Form --}}
+            <form action="{{ route('admin.venues.index') }}" method="GET" class="flex w-full md:w-auto">
+                <input type="text"
+                       name="search"
+                       value="{{ request('search') }}"
+                       placeholder="Search venues..."
+                       class="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                <button type="submit"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-r-lg text-sm hover:bg-indigo-700 transition">
+                    Search
+                </button>
+            </form>
+
+            {{-- Create Button --}}
+            @can('create', \App\Models\Venue::class)
+                <a href="{{ route('admin.venues.create') }}"
+                   class="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition">
+                    + Create Venue
+                </a>
+            @endcan
+        </div>
     </div>
 
     {{-- ================= VENUE LIST ================= --}}
     <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl overflow-hidden">
 
         @forelse($venues as $venue)
-
             <div class="relative flex flex-col gap-4 px-6 py-6 border-b last:border-0 hover:bg-gray-50 lg:flex-row lg:items-center">
                 
                 {{-- LEFT CONTENT --}}
@@ -77,17 +92,10 @@
 
         @empty
             <div class="text-center py-12 text-gray-500">
-                <p class="text-lg font-semibold">No venues yet</p>
-                <p class="text-sm mt-1">Create your first venue to get started</p>
+                <p class="text-lg font-semibold">No venues found</p>
+                <p class="text-sm mt-1">Try a different search or create a new venue.</p>
 
-                @can('create', \App\Models\Venue::class)
-                    <a href="{{ route('admin.venues.create') }}"
-                       class="mt-4 inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition">
-                        + Create Venue
-                    </a>
-                @else
-                    <p class="mt-4 text-sm text-gray-400">You don't have permission to create venues.</p>
-                @endcan
+               
             </div>
         @endforelse
     </div>
