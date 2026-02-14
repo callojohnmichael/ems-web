@@ -286,27 +286,49 @@ class ReportController extends Controller
     {
         [$startDate, $endDate] = $this->resolveDateRange($request);
 
-        $postRows = Post::query()
-            ->join('events', 'events.id', '=', 'posts.event_id')
-            ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
-            ->select('events.title', DB::raw('COUNT(posts.id) as total_posts'))
-            ->groupBy('events.title')
-            ->orderByDesc('total_posts')
-            ->take(20)
-            ->get()
-            ->map(fn ($row) => [
-                'Event' => $row->title,
-                'Posts' => (int) $row->total_posts,
-            ])
-            ->toArray();
+        $engagementPostTable = Schema::hasTable('event_posts')
+            ? 'event_posts'
+            : (Schema::hasTable('posts') ? 'posts' : null);
 
-        $commentsCount = Schema::hasTable('post_comments')
-            ? DB::table('post_comments')
-                ->join('posts', 'posts.id', '=', 'post_comments.post_id')
-                ->join('events', 'events.id', '=', 'posts.event_id')
+        $postRows = $engagementPostTable
+            ? DB::table("{$engagementPostTable} as p")
+                ->join('events', 'events.id', '=', 'p.event_id')
+                ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                ->select('events.title', DB::raw('COUNT(p.id) as total_posts'))
+                ->groupBy('events.title')
+                ->orderByDesc('total_posts')
+                ->take(20)
+                ->get()
+                ->map(fn ($row) => [
+                    'Event' => $row->title,
+                    'Posts' => (int) $row->total_posts,
+                ])
+                ->toArray()
+            : [];
+
+        $postsCount = $engagementPostTable
+            ? DB::table("{$engagementPostTable} as p")
+                ->join('events', 'events.id', '=', 'p.event_id')
                 ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
                 ->count()
             : 0;
+
+        $commentsCount = 0;
+        if (Schema::hasTable('post_comments')) {
+            if (Schema::hasTable('event_posts') && Schema::hasColumn('post_comments', 'event_post_id')) {
+                $commentsCount = DB::table('post_comments')
+                    ->join('event_posts', 'event_posts.id', '=', 'post_comments.event_post_id')
+                    ->join('events', 'events.id', '=', 'event_posts.event_id')
+                    ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                    ->count();
+            } elseif (Schema::hasTable('posts') && Schema::hasColumn('post_comments', 'post_id')) {
+                $commentsCount = DB::table('post_comments')
+                    ->join('posts', 'posts.id', '=', 'post_comments.post_id')
+                    ->join('events', 'events.id', '=', 'posts.event_id')
+                    ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                    ->count();
+            }
+        }
 
         $avgRating = null;
         if (Schema::hasTable('event_ratings')) {
@@ -321,7 +343,7 @@ class ReportController extends Controller
             section: 'engagement',
             title: 'Engagement & Media',
             cards: [
-                'Posts' => Post::whereHas('event', fn ($q) => $this->applyEventDateRange($q, $startDate, $endDate))->count(),
+                'Posts' => $postsCount,
                 'Comments' => $commentsCount,
                 'Top Event Posts' => (int) (collect($postRows)->first()['Posts'] ?? 0),
                 'Average Rating' => $avgRating !== null ? number_format((float) $avgRating, 2) : 'N/A',
@@ -478,15 +500,7 @@ class ReportController extends Controller
             ],
             'engagement' => [
                 'columns' => ['Event', 'Posts'],
-                'rows' => Post::query()
-                    ->join('events', 'events.id', '=', 'posts.event_id')
-                    ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
-                    ->select('events.title', DB::raw('COUNT(posts.id) as total_posts'))
-                    ->groupBy('events.title')
-                    ->orderByDesc('total_posts')
-                    ->get()
-                    ->map(fn ($row) => ['Event' => $row->title, 'Posts' => (int) $row->total_posts])
-                    ->toArray(),
+                'rows' => $this->engagementRows($startDate, $endDate),
             ],
             'support' => [
                 'columns' => ['Status', 'Tickets'],
@@ -545,6 +559,27 @@ class ReportController extends Controller
             'horizontal' => $horizontal,
             'fullWidth' => $fullWidth,
         ];
+    }
+
+    private function engagementRows(Carbon $startDate, Carbon $endDate): array
+    {
+        $engagementPostTable = Schema::hasTable('event_posts')
+            ? 'event_posts'
+            : (Schema::hasTable('posts') ? 'posts' : null);
+
+        if (! $engagementPostTable) {
+            return [];
+        }
+
+        return DB::table("{$engagementPostTable} as p")
+            ->join('events', 'events.id', '=', 'p.event_id')
+            ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+            ->select('events.title', DB::raw('COUNT(p.id) as total_posts'))
+            ->groupBy('events.title')
+            ->orderByDesc('total_posts')
+            ->get()
+            ->map(fn ($row) => ['Event' => $row->title, 'Posts' => (int) $row->total_posts])
+            ->toArray();
     }
 
     private function resolveDateRange(Request $request): array
