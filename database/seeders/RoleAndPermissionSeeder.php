@@ -64,6 +64,14 @@ class RoleAndPermissionSeeder extends Seeder
             'manage all posts',
             'view schedule and events',
             'receive support',
+            'view multimedia',
+            'create multimedia post',
+            'edit multimedia post',
+            'delete multimedia post',
+            'publish multimedia post',
+            'react multimedia post',
+            'comment multimedia post',
+            'manage multimedia',
         ];
 
         foreach ($permissions as $permission) {
@@ -104,6 +112,9 @@ class RoleAndPermissionSeeder extends Seeder
             'comment posts',
             'view program flow',
             'contact support',
+            'view multimedia',
+            'react multimedia post',
+            'comment multimedia post',
         ]);
 
         // 🎬 MULTIMEDIA STAFF
@@ -112,6 +123,15 @@ class RoleAndPermissionSeeder extends Seeder
             'manage all posts',
             'view schedule and events',
             'receive support',
+            'view program flow',
+            'view multimedia',
+            'create multimedia post',
+            'edit multimedia post',
+            'delete multimedia post',
+            'publish multimedia post',
+            'react multimedia post',
+            'comment multimedia post',
+            'manage multimedia',
         ]);
 
         /*
@@ -133,6 +153,12 @@ class RoleAndPermissionSeeder extends Seeder
             ->each(function ($user) use ($userRole) {
                 $user->syncRoles([$userRole]);
             });
+
+        // Keep the seeded multimedia account aligned with multimedia menu access.
+        $seededMediaUser = User::where('email', 'media@example.com')->first();
+        if ($seededMediaUser) {
+            $seededMediaUser->syncRoles([$mediaRole]);
+        }
 
         // Clear cache again after changes
         app(PermissionRegistrar::class)->forgetCachedPermissions();

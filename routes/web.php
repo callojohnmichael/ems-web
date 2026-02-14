@@ -252,6 +252,12 @@ Route::middleware(['auth', 'role:user'])
 */
 Route::middleware(['auth', 'permission:view multimedia'])->group(function () {
 
+    // Legacy multimedia routes kept for backward compatibility.
+    Route::get('/media/dashboard', [DashboardController::class, 'media'])
+        ->name('media.dashboard');
+    Route::redirect('/media/posts', '/multimedia')
+        ->name('media.posts');
+
     Route::get('/multimedia', [MultimediaController::class, 'index'])
         ->name('multimedia.index');
 
