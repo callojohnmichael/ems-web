@@ -10,6 +10,7 @@ use App\Http\Controllers\MultimediaController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProgramFlowController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SupportController;
 
 use App\Http\Controllers\Admin\AttendanceController;
@@ -155,6 +156,15 @@ Route::middleware('auth')->group(function () {
 Route::get('/tickets/{participant}', [EventCheckInController::class, 'publicTicket'])
     ->middleware('signed')
     ->name('checkin.tickets.show');
+
+Route::middleware(['auth', 'super-admin'])
+    ->prefix('site-settings')
+    ->name('site-settings.')
+    ->group(function () {
+        Route::get('/', [SiteSettingsController::class, 'index'])->name('index');
+        Route::post('/roles/{role}', [SiteSettingsController::class, 'updateRole'])->name('roles.update');
+        Route::post('/reset-defaults', [SiteSettingsController::class, 'resetDefaults'])->name('reset-defaults');
+    });
 
 
 /*

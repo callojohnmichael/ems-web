@@ -77,4 +77,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(SupportTicket::class);
     }
+
+    public function menuAccessOverrides(): HasMany
+    {
+        return $this->hasMany(UserMenuAccess::class);
+    }
 }

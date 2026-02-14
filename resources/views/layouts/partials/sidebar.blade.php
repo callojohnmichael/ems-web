@@ -1,3 +1,8 @@
+@php
+    $menu = $layoutMenuVisibility ?? [];
+    $show = static fn (string $key): bool => (bool) ($menu[$key] ?? false);
+@endphp
+
 <aside class="fixed left-0 top-0 z-40 h-screen w-64 border-r border-gray-200 bg-white shadow-sm" x-data="{ collapsed: false }">
     <div class="flex h-full flex-col">
         <div class="flex h-16 items-center gap-2 border-b border-gray-100 px-4">
@@ -21,10 +26,12 @@
                 </div>
             </div>
 
+            @if($show('dashboard'))
             <a href="{{ route(Auth::user()->dashboardRoute()) }}" data-menu-label="dashboard home" class="menu-search-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('admin.dashboard') || request()->routeIs('user.dashboard') || request()->routeIs('media.dashboard') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                 Dashboard
             </a>
+            @endif
 
             <!-- @role('admin') -->
             <!-- <a href="{{ route('admin.approvals') }}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('admin.approvals') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}"> -->
@@ -33,11 +40,14 @@
             <!-- </a> -->
             <!-- @endrole -->
 
+            @if($show('calendar'))
             <a href="{{ route('calendar.index') }}" data-menu-label="calendar schedule" class="menu-search-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('calendar.*') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 Calendar
             </a>
+            @endif
 
+            @if($show('events') || $show('program_flow') || $show('event_check_in') || $show('participants') || $show('attendance'))
             <div
                 data-menu-label="event management events program flow event check-in participants attendance"
                 class="menu-search-item rounded-xl bg-gray-100 p-1.5"
@@ -58,46 +68,55 @@
                 </button>
                 <div x-show="eventOpen" x-transition class="mt-2 pl-3" style="display: none;">
                     <div class="space-y-1.5 border-l-2 border-gray-300 pl-3">
+                        @if($show('events'))
                         <a href="{{ route('events.index') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('events.*') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">
                             Events
                         </a>
+                        @endif
+                        @if($show('program_flow'))
                         <a href="{{ route('program-flow.index') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('program-flow.*') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">
                             Program Flow
                         </a>
-                        @can('event check-in access')
+                        @endif
+                        @if($show('event_check_in'))
                             <a href="{{ route('checkin.index') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('checkin.*') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">
                                 Event Check-In
                             </a>
-                        @endcan
-                        @role('admin')
+                        @endif
+                        @if($show('participants'))
                             <a href="{{ route('admin.participants.index') }}" class="block rounded-lg px-3 py-2 text-sm {{ (request()->routeIs('admin.participants.*') || request()->routeIs('admin.events.participants.*')) ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">
                                 Participants
                             </a>
-                            @can('manage participants')
+                        @endif
+                        @if($show('attendance'))
                                 <a href="{{ route('admin.attendance.index') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('admin.attendance.*') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">
                                     Attendance
                                 </a>
-                            @endcan
-                        @endrole
+                        @endif
                     </div>
                 </div>
             </div>
+            @endif
 
-            @can('view multimedia')
+            @if($show('multimedia'))
             <a href="{{ route('multimedia.index') }}" data-menu-label="multimedia posts media" class="menu-search-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('multimedia.*') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 Multimedia
             </a>
-            @endcan
-            @role('admin')
+            @endif
+            @if($show('venues'))
             <a href="{{ route('admin.venues.index') }}" data-menu-label="venues locations" class="menu-search-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('admin.venues.*') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                 Venues
             </a>
+            @endif
+            @if($show('documents'))
             <a href="{{ route('admin.documents.index') }}" data-menu-label="documents files" class="menu-search-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('admin.documents.*') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Documents
             </a>
+            @endif
+            @if($show('notifications'))
             <a href="{{ route('notifications.index') }}" data-menu-label="notifications alerts inbox" class="menu-search-item flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('notifications.*') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <span class="flex items-center gap-3">
                 <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
@@ -107,11 +126,14 @@
                     {{ $layoutNotificationData['unread_count'] ?? 0 }}
                 </span>
             </a>
+            @endif
+            @if($show('support'))
             <a href="{{ route('support.index') }}" data-menu-label="help support tickets" class="menu-search-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('support.*') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                 Help Support
             </a>
-            @can('view reports')
+            @endif
+            @if($show('reports_overview') || $show('reports_pipeline') || $show('reports_participants') || $show('reports_venues') || $show('reports_finance') || $show('reports_engagement') || $show('reports_support'))
             <div
                 data-menu-label="reports analytics overview pipeline participants venues finance engagement support"
                 class="menu-search-item rounded-xl bg-gray-100 p-1.5"
@@ -132,17 +154,32 @@
                 </button>
                 <div x-show="reportsOpen" x-transition class="mt-2 pl-3" style="display: none;">
                     <div class="space-y-1.5 border-l-2 border-gray-300 pl-3">
+                        @if($show('reports_overview'))
                         <a href="{{ route('reports.index') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('reports.index') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">Overview</a>
+                        @endif
+                        @if($show('reports_pipeline'))
                         <a href="{{ route('reports.pipeline') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('reports.pipeline') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">Pipeline</a>
+                        @endif
+                        @if($show('reports_participants'))
                         <a href="{{ route('reports.participants') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('reports.participants') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">Participants</a>
+                        @endif
+                        @if($show('reports_venues'))
                         <a href="{{ route('reports.venues') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('reports.venues') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">Venues</a>
+                        @endif
+                        @if($show('reports_finance'))
                         <a href="{{ route('reports.finance') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('reports.finance') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">Finance</a>
+                        @endif
+                        @if($show('reports_engagement'))
                         <a href="{{ route('reports.engagement') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('reports.engagement') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">Engagement</a>
+                        @endif
+                        @if($show('reports_support'))
                         <a href="{{ route('reports.support') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('reports.support') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">Support</a>
+                        @endif
                     </div>
                 </div>
             </div>
-            @endcan
+            @endif
+            @if($show('users') || $show('roles') || $show('permissions'))
             <div
                 data-menu-label="account management users roles permissions"
                 class="menu-search-item rounded-xl bg-gray-100 p-1.5"
@@ -164,19 +201,25 @@
 
                 <div x-show="accountOpen" x-transition class="mt-2 pl-3" style="display: none;">
                     <div class="space-y-1.5 border-l-2 border-gray-300 pl-3">
+                        @if($show('users'))
                         <a href="{{ route('admin.users.index') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('admin.users.*') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">
                             Users
                         </a>
+                        @endif
+                        @if($show('roles'))
                         <a href="{{ route('admin.roles.index') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('admin.roles.index') || request()->routeIs('admin.roles.create-role') || request()->routeIs('admin.roles.edit-role') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">
                             Roles
                         </a>
+                        @endif
+                        @if($show('permissions'))
                         <a href="{{ route('admin.roles.permissions.index') }}" class="block rounded-lg px-3 py-2 text-sm {{ request()->routeIs('admin.roles.permissions.*') || request()->routeIs('admin.roles.create-permission') ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-700 hover:bg-gray-200' }}">
                             Permissions
                         </a>
+                        @endif
                     </div>
                 </div>
             </div>
-            @endrole
+            @endif
 
             <div data-menu-search-empty class="hidden rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center">
                 <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500">

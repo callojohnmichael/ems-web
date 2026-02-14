@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\MenuAccessService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -55,6 +56,8 @@ class AppServiceProvider extends ServiceProvider
                 'latest' => $latestNotifications,
                 'poll_seconds' => (int) config('ems_notifications.poll_interval_seconds', 10),
             ]);
+
+            $view->with('layoutMenuVisibility', app(MenuAccessService::class)->getVisibilityMapForUser($user));
         });
     }
 }

@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'increase.post.size' => \App\Http\Middleware\IncreasePostSize::class,
+            'super-admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
         ]);
         
         // Apply to web routes to handle large uploads
