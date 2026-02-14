@@ -35,6 +35,8 @@ class Event extends Model
         ];
     }
 
+    // --- Relationships ---
+
     public function requestedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by');
@@ -50,11 +52,10 @@ class Event extends Model
         return $this->hasMany(VenueBooking::class);
     }
 
-public function resourceAllocations(): HasMany
-{
-    return $this->hasMany(ResourceAllocation::class, 'event_id', 'id');
-}
-
+    public function resourceAllocations(): HasMany
+    {
+        return $this->hasMany(ResourceAllocation::class, 'event_id', 'id');
+    }
 
     public function invitations(): HasMany
     {
@@ -81,14 +82,13 @@ public function resourceAllocations(): HasMany
         return $this->hasMany(ProgramItem::class)->orderBy('order');
     }
 
-    public function posts(): HasMany
+    /**
+     * Unified Multimedia Relationship
+     * Replaces the old 'posts' and 'media' functions
+     */
+    public function multimediaPosts(): HasMany
     {
-        return $this->hasMany(Post::class);
-    }
-
-    public function media(): HasMany
-    {
-        return $this->hasMany(EventMedia::class);
+        return $this->hasMany(EventPost::class);
     }
 
     public function feedbackResponses(): HasMany
@@ -129,34 +129,31 @@ public function resourceAllocations(): HasMany
         return $this->hasMany(EventRating::class);
     }
 
-public function logisticsItems()
-{
-    return $this->hasMany(EventLogisticsItem::class);
-}
-
-public function isFinanceRequestApproved(): bool
-{
-    return $this->financeRequest
-        && $this->financeRequest->status === 'approved';
-}
-
-public function isCustodianApproved(): bool
-{
-    // If no custodian requests, treat as approved
-    if ($this->custodianRequests->count() === 0) {
-        return true;
+    public function logisticsItems(): HasMany
+    {
+        return $this->hasMany(EventLogisticsItem::class);
     }
 
-    // All must be approved
-    return $this->custodianRequests->every(fn($r) => $r->status === 'approved');
-}
+    // --- Logic / Helpers ---
 
-public function canBeFullyApproved(): bool
-{
-    // Only check finance request and custodian request
-    return $this->isFinanceRequestApproved()
-        && $this->isCustodianApproved();
-}
+    public function isFinanceRequestApproved(): bool
+    {
+        return $this->financeRequest
+            && $this->financeRequest->status === 'approved';
+    }
 
+    public function isCustodianApproved(): bool
+    {
+        if ($this->custodianRequests->count() === 0) {
+            return true;
+        }
 
+        return $this->custodianRequests->every(fn($r) => $r->status === 'approved');
+    }
+
+    public function canBeFullyApproved(): bool
+    {
+        return $this->isFinanceRequestApproved()
+            && $this->isCustodianApproved();
+    }
 }

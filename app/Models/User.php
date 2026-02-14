@@ -12,14 +12,10 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasRoles;
 
     /**
-     * 🔥 IMPORTANT FOR SPATIE
-     * Ensures role/permission uses "web" guard (matches your seeder & routes)
+     * IMPORTANT FOR SPATIE
      */
     protected string $guard_name = 'web';
 
-    /**
-     * Mass assignable
-     */
     protected $fillable = [
         'name',
         'email',
@@ -27,17 +23,11 @@ class User extends Authenticatable
         'skip_2fa',
     ];
 
-    /**
-     * Hidden fields
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Casts
-     */
     protected function casts(): array
     {
         return [
@@ -46,12 +36,6 @@ class User extends Authenticatable
             'skip_2fa' => 'boolean',
         ];
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | ROLE HELPERS
-    |--------------------------------------------------------------------------
-    */
 
     public function isAdmin(): bool
     {
@@ -67,12 +51,6 @@ class User extends Authenticatable
     {
         return $this->hasRole('multimedia_staff');
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | ROLE-BASED DASHBOARD REDIRECT
-    |--------------------------------------------------------------------------
-    */
 
     public function dashboardRoute(): string
     {

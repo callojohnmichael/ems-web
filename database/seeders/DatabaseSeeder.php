@@ -41,6 +41,7 @@ class DatabaseSeeder extends Seeder
          $this->call([
             CampusFacilitySeeder::class,
             MasterDataSeeder::class,
+            MultimediaPermissionSeeder::class,
         ]);
     }
 

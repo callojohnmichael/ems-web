@@ -16,6 +16,9 @@ use App\Http\Controllers\Admin\ParticipantController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\VenueController;
+use App\Http\Controllers\EventPostController;
+use App\Http\Controllers\PostReactionController;
+use App\Http\Controllers\PostCommentController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -53,26 +56,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/reject', [EventController::class, 'reject'])->name('events.reject');
     Route::post('/events/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
 
-    // Multimedia
-    Route::get('/multimedia', [MultimediaController::class, 'index'])->name('multimedia.index');
-
-    // Media posts (general authenticated access) served by MultimediaController
-    Route::get('/media/posts', [MultimediaController::class, 'posts'])->name('media.posts');
-    Route::get('/media/posts/{post}', [MultimediaController::class, 'postsShow'])->name('media.posts.show');
-
-    // Event ratings
-    Route::post('/events/{event}/ratings', [\App\Http\Controllers\EventRatingController::class, 'store'])->name('events.ratings.store');
-
-    // Multimedia creation/editing protected by permissions (managed via RolePermissionController)
-    Route::get('/media/posts/create', [MultimediaController::class, 'postsCreate'])
-        ->middleware(['permission:create posts'])->name('media.posts.create');
-
-    Route::post('/media/posts', [MultimediaController::class, 'postsStore'])
-        ->middleware(['permission:create posts'])->name('media.posts.store');
-
-    // Deletion is authorized in controller (owner, admin, or 'manage all posts' permission)
-    Route::delete('/media/posts/{post}', [MultimediaController::class, 'postsDestroy'])->name('media.posts.destroy');
-
+    
     // Program Flow
     Route::get('/program-flow', [ProgramFlowController::class, 'index'])->name('program-flow.index');
     Route::get('/program-flow/{event}', [ProgramFlowController::class, 'show'])->name('program-flow.show');
@@ -158,15 +142,43 @@ Route::middleware(['auth', 'role:user'])
 
 /*
 |--------------------------------------------------------------------------
-| MULTIMEDIA STAFF ROUTES
+| MULTIMEDIA MODULE
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:multimedia_staff'])
-    ->prefix('media')
-    ->name('media.')
-    ->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'media'])->name('dashboard');
-        Route::get('/posts', [DashboardController::class, 'mediaPosts'])->name('posts');
-    });
+Route::middleware(['auth', 'permission:view multimedia'])->group(function () {
+
+    Route::get('/multimedia', [MultimediaController::class, 'index'])
+        ->name('multimedia.index');
+
+    Route::get('/multimedia/posts/create', [EventPostController::class, 'create'])
+        ->middleware('permission:create multimedia post')
+        ->name('multimedia.posts.create');
+
+    Route::post('/multimedia/posts', [EventPostController::class, 'store'])
+        ->middleware('permission:create multimedia post')
+        ->name('multimedia.posts.store');
+
+    // Reactions (all authenticated users can react)
+    Route::post('/multimedia/posts/{post}/reactions', [PostReactionController::class, 'store'])
+        ->middleware('permission:react multimedia post')
+        ->name('multimedia.posts.reactions.store');
+
+    Route::delete('/multimedia/posts/{post}/reactions', [PostReactionController::class, 'destroy'])
+        ->middleware('permission:react multimedia post')
+        ->name('multimedia.posts.reactions.destroy');
+
+    // Comments (all authenticated users can comment)
+    Route::post('/multimedia/posts/{post}/comments', [PostCommentController::class, 'store'])
+        ->middleware('permission:comment multimedia post')
+        ->name('multimedia.posts.comments.store');
+
+    Route::put('/multimedia/posts/{post}/comments/{comment}', [PostCommentController::class, 'update'])
+        ->middleware('permission:comment multimedia post')
+        ->name('multimedia.posts.comments.update');
+
+    Route::delete('/multimedia/posts/{post}/comments/{comment}', [PostCommentController::class, 'destroy'])
+        ->middleware('permission:comment multimedia post')
+        ->name('multimedia.posts.comments.destroy');
+});
 
 require __DIR__ . '/auth.php';
