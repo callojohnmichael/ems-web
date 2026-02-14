@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -20,6 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
         
         // Apply to web routes to handle large uploads
         $middleware->web(\App\Http\Middleware\IncreasePostSize::class);
+        
+        // API middleware
+        $middleware->api([
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            'throttle:api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Handle PostTooLargeException by showing a user-friendly message
