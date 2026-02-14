@@ -297,4 +297,6 @@ Route::get('/api/docs', function () {
 
 Route::get('/api/url', [App\Http\Controllers\ApiUrlController::class, 'getApiUrl'])->name('api.url');
 
+Route::get('/test-domain', [App\Http\Controllers\DomainTestController::class, 'test'])->name('test.domain');
+
 require __DIR__ . '/auth.php';
