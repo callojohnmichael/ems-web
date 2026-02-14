@@ -43,6 +43,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // API Integration
+    Route::get('/account/api-integration', function () {
+        return view('account.api-integration');
+    })->name('account.api-integration')->middleware('auth');
+    
+    Route::get('/account/api-integration-guide', function () {
+        return view('account.api-integration-guide');
+    })->name('account.api-integration-guide')->middleware('auth');
 
     // Calendar
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
@@ -276,5 +285,18 @@ Route::middleware(['auth', 'permission:view multimedia'])->group(function () {
         ->middleware('permission:comment multimedia post')
         ->name('multimedia.posts.comments.destroy');
 });
+
+// API Developer Portal
+Route::get('/api/developer', function () {
+    return view('api.developer-portal');
+})->name('api.developer.portal');
+
+Route::get('/api/docs', function () {
+    return redirect('/API_DOCUMENTATION.md');
+})->name('api.docs');
+
+Route::get('/api/url', [App\Http\Controllers\ApiUrlController::class, 'getApiUrl'])->name('api.url');
+
+Route::get('/test-domain', [App\Http\Controllers\DomainTestController::class, 'test'])->name('test.domain');
 
 require __DIR__ . '/auth.php';
