@@ -45,6 +45,7 @@ class DatabaseSeeder extends Seeder
             MasterDataSeeder::class,
             MultimediaPermissionSeeder::class,
             CoreProcessSeeder::class,
+            EventStatusSeeder::class,
         ]);
     }
 
