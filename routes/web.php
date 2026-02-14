@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\ParticipantController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RolePermissionController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VenueController;
 
 Route::get('/', function () {
@@ -132,11 +133,19 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::resource('reports', ReportController::class)->only(['index']);
         Route::resource('documents', DocumentController::class)->only(['index']);
+        Route::resource('users', UserController::class)->except(['show']);
 
         // Roles & Permissions
         Route::get('/roles', [RolePermissionController::class, 'index'])->name('roles.index');
-        Route::get('/roles/users/{user}/edit', [RolePermissionController::class, 'editUser'])->name('roles.edit-user');
-        Route::put('/roles/users/{user}', [RolePermissionController::class, 'updateUser'])->name('roles.update-user');
+        Route::get('/roles/create-role', [RolePermissionController::class, 'createRole'])->name('roles.create-role');
+        Route::post('/roles/create-role', [RolePermissionController::class, 'storeRole'])->name('roles.store-role');
+        Route::delete('/roles/role/{role}', [RolePermissionController::class, 'destroyRole'])->name('roles.destroy-role');
+        Route::get('/roles/permissions', [RolePermissionController::class, 'permissionsIndex'])->name('roles.permissions.index');
+        Route::get('/roles/create-permission', [RolePermissionController::class, 'createPermission'])->name('roles.create-permission');
+        Route::post('/roles/create-permission', [RolePermissionController::class, 'storePermission'])->name('roles.store-permission');
+        Route::get('/roles/permissions/{permission}/edit', [RolePermissionController::class, 'editPermission'])->name('roles.permissions.edit');
+        Route::put('/roles/permissions/{permission}', [RolePermissionController::class, 'updatePermission'])->name('roles.permissions.update');
+        Route::delete('/roles/permissions/{permission}', [RolePermissionController::class, 'destroyPermission'])->name('roles.permissions.destroy');
         Route::get('/roles/role/{role}/edit', [RolePermissionController::class, 'editRole'])->name('roles.edit-role');
         Route::put('/roles/role/{role}', [RolePermissionController::class, 'updateRole'])->name('roles.update-role');
     });

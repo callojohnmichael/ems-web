@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,27 +13,37 @@ class RolePermissionController extends Controller
 {
     public function index(): View
     {
-        $users = User::with('roles')->orderBy('name')->get();
-        $roles = Role::with('permissions')->where('guard_name', 'web')->orderBy('name')->get();
+        $roles = Role::withCount('permissions')
+            ->where('guard_name', 'web')
+            ->orderBy('name')
+            ->paginate(12);
+
+        return view('admin.roles.index', compact('roles'));
+    }
+
+    public function createRole(): View
+    {
         $permissions = Permission::where('guard_name', 'web')->orderBy('name')->get();
 
-        return view('admin.roles.index', compact('users', 'roles', 'permissions'));
+        return view('admin.roles.create-role', compact('permissions'));
     }
 
-    public function editUser(User $user): View
+    public function storeRole(Request $request): RedirectResponse
     {
-        $roles = Role::where('guard_name', 'web')->orderBy('name')->get();
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
+            'permissions' => ['array'],
+            'permissions.*' => ['string', 'exists:permissions,name'],
+        ]);
 
-        return view('admin.roles.edit-user', compact('user', 'roles'));
-    }
+        $role = Role::create([
+            'name' => $validated['name'],
+            'guard_name' => 'web',
+        ]);
 
-    public function updateUser(Request $request, User $user): RedirectResponse
-    {
-        $request->validate(['roles' => ['array'], 'roles.*' => ['string', 'exists:roles,name']]);
+        $role->syncPermissions($validated['permissions'] ?? []);
 
-        $user->syncRoles($request->input('roles', []));
-
-        return redirect()->route('admin.roles.index')->with('success', __('User roles updated.'));
+        return redirect()->route('admin.roles.index')->with('success', __('Role created successfully.'));
     }
 
     public function editRole(Role $role): View
@@ -42,6 +51,68 @@ class RolePermissionController extends Controller
         $permissions = Permission::where('guard_name', 'web')->orderBy('name')->get();
 
         return view('admin.roles.edit-role', compact('role', 'permissions'));
+    }
+
+    public function destroyRole(Role $role): RedirectResponse
+    {
+        if ($role->name === 'admin') {
+            return redirect()->route('admin.roles.index')->with('error', __('The admin role cannot be deleted.'));
+        }
+
+        $role->delete();
+
+        return redirect()->route('admin.roles.index')->with('success', __('Role deleted successfully.'));
+    }
+
+    public function permissionsIndex(): View
+    {
+        $permissions = Permission::where('guard_name', 'web')->orderBy('name')->paginate(12);
+
+        return view('admin.roles.permissions-index', compact('permissions'));
+    }
+
+    public function createPermission(): View
+    {
+        return view('admin.roles.create-permission');
+    }
+
+    public function storePermission(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:permissions,name'],
+        ]);
+
+        Permission::create([
+            'name' => $validated['name'],
+            'guard_name' => 'web',
+        ]);
+
+        return redirect()->route('admin.roles.permissions.index')->with('success', __('Permission created successfully.'));
+    }
+
+    public function editPermission(Permission $permission): View
+    {
+        return view('admin.roles.edit-permission', compact('permission'));
+    }
+
+    public function updatePermission(Request $request, Permission $permission): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:permissions,name,' . $permission->id],
+        ]);
+
+        $permission->update([
+            'name' => $validated['name'],
+        ]);
+
+        return redirect()->route('admin.roles.permissions.index')->with('success', __('Permission updated successfully.'));
+    }
+
+    public function destroyPermission(Permission $permission): RedirectResponse
+    {
+        $permission->delete();
+
+        return redirect()->route('admin.roles.permissions.index')->with('success', __('Permission deleted successfully.'));
     }
 
     public function updateRole(Request $request, Role $role): RedirectResponse
