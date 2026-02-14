@@ -24,6 +24,7 @@ use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PostCommentController;
 
 Route::get('/', function () {
+    abort(419);
     return view('welcome');
 });
 
