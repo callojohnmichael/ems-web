@@ -43,6 +43,27 @@
         </div>
     </div>
 
+    {{-- ================= SEARCH BAR ================= --}}
+    <div class="mb-6">
+        <form action="{{ route('events.index') }}" method="GET" class="flex gap-2">
+            <input type="text" 
+                   name="search" 
+                   value="{{ $search ?? '' }}"
+                   placeholder="Search events by title, description, or venue..."
+                   class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <button type="submit" 
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                Search
+            </button>
+            @if($search ?? false)
+                <a href="{{ route('events.index') }}" 
+                   class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                    Clear
+                </a>
+            @endif
+        </form>
+    </div>
+
     {{-- ================= EVENTS LIST ================= --}}
     <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl overflow-hidden">
 
@@ -114,6 +135,8 @@
                                 @case('pending_approvals') bg-yellow-50 text-yellow-800 ring-yellow-600/20 @break
                                 @case('approved') bg-blue-50 text-blue-700 ring-blue-700/10 @break
                                 @case('published') bg-green-50 text-green-700 ring-green-600/20 @break
+                                @case('completed') bg-gray-50 text-gray-700 ring-gray-600/20 @break
+                                @case('cancelled') bg-red-50 text-red-700 ring-red-600/20 @break
                                 @default bg-gray-50 text-gray-600 ring-gray-500/10
                             @endswitch">
                             {{ Str::headline($event->status) }}

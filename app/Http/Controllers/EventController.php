@@ -35,12 +35,22 @@ class EventController extends Controller
     {
         $user = $request->user();
 
+        // Auto-complete events that have ended
+        Event::where('status', 'published')
+              ->where('end_at', '<', now())
+              ->update(['status' => 'completed']);
+
+        // Handle search
+        $search = $request->get('search');
+        
         $query = Event::with([
             'requestedBy',
             'venue',
             'participants',
             'logisticsItems',
             'budget',
+            'financeRequest',
+            'custodianRequests'
         ])->latest();
 
         if ($user->isAdmin()) {
@@ -53,12 +63,23 @@ class EventController extends Controller
             });
         }
 
+        // Apply search filter
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%')
+                  ->orWhereHas('venue', function($subQ) use ($search) {
+                      $subQ->where('name', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
         $events = $query->get();
 
         $canManageVenues = $user->isAdmin() || $user->hasPermissionTo('manage venues');
         $canManageParticipants = $user->isAdmin() || $user->hasPermissionTo('manage participants');
 
-        return view('events.index', compact('events', 'canManageVenues', 'canManageParticipants'));
+        return view('events.index', compact('events', 'canManageVenues', 'canManageParticipants', 'search'));
     }
 
     /**
