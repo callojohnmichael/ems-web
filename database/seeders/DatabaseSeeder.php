@@ -43,11 +43,8 @@ class DatabaseSeeder extends Seeder
             CampusFacilitySeeder::class,
             SchoolSystemSeeder::class,
             MasterDataSeeder::class,
-<<<<<<< HEAD
             MultimediaPermissionSeeder::class,
-=======
             CoreProcessSeeder::class,
->>>>>>> 22348c87f71f97794f73e09baf04a2e89c21a2f8
         ]);
     }
 

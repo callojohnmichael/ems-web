@@ -134,33 +134,14 @@ class Event extends Model
         return $this->hasMany(EventRating::class);
     }
 
-<<<<<<< HEAD
-    public function logisticsItems(): HasMany
+public function logisticsItems(): HasMany
     {
         return $this->hasMany(EventLogisticsItem::class);
-=======
-public function logisticsItems()
-{
-    return $this->hasMany(EventLogisticsItem::class);
-}
+    }
 
-public function supportTickets(): HasMany
-{
-    return $this->hasMany(SupportTicket::class);
-}
-
-public function isFinanceRequestApproved(): bool
-{
-    return $this->financeRequest
-        && $this->financeRequest->status === 'approved';
-}
-
-public function isCustodianApproved(): bool
-{
-    // If no custodian requests, treat as approved
-    if ($this->custodianRequests->count() === 0) {
-        return true;
->>>>>>> 22348c87f71f97794f73e09baf04a2e89c21a2f8
+    public function supportTickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
     }
 
     // --- Logic / Helpers ---
@@ -173,11 +154,11 @@ public function isCustodianApproved(): bool
 
     public function isCustodianApproved(): bool
     {
+        // If no custodian requests, treat as approved
         if ($this->custodianRequests->count() === 0) {
             return true;
         }
 
-<<<<<<< HEAD
         return $this->custodianRequests->every(fn($r) => $r->status === 'approved');
     }
 
@@ -187,6 +168,3 @@ public function isCustodianApproved(): bool
             && $this->isCustodianApproved();
     }
 }
-=======
-}
->>>>>>> 22348c87f71f97794f73e09baf04a2e89c21a2f8

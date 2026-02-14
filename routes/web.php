@@ -58,34 +58,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/reject', [EventController::class, 'reject'])->name('events.reject');
     Route::post('/events/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
 
-<<<<<<< HEAD
-    
-=======
-    // Multimedia
-    Route::get('/multimedia', [MultimediaController::class, 'index'])->name('multimedia.index');
+   
 
-    // Media posts (general authenticated access) served by MultimediaController
-    Route::get('/media/posts', [MultimediaController::class, 'posts'])->name('media.posts');
-    Route::get('/media/posts/{post}', [MultimediaController::class, 'postsShow'])
-        ->whereNumber('post')
-        ->name('media.posts.show');
-
-    // Event ratings
-    Route::post('/events/{event}/ratings', [\App\Http\Controllers\EventRatingController::class, 'store'])->name('events.ratings.store');
-
-    // Multimedia creation/editing protected by permissions (managed via RolePermissionController)
-    Route::get('/media/posts/create', [MultimediaController::class, 'postsCreate'])
-        ->middleware(['permission:create posts'])->name('media.posts.create');
-
-    Route::post('/media/posts', [MultimediaController::class, 'postsStore'])
-        ->middleware(['permission:create posts'])->name('media.posts.store');
-
-    // Deletion is authorized in controller (owner, admin, or 'manage all posts' permission)
-    Route::delete('/media/posts/{post}', [MultimediaController::class, 'postsDestroy'])
-        ->whereNumber('post')
-        ->name('media.posts.destroy');
-
->>>>>>> 22348c87f71f97794f73e09baf04a2e89c21a2f8
     // Program Flow
     Route::get('/program-flow', [ProgramFlowController::class, 'index'])->name('program-flow.index');
     Route::get('/program-flow/{event}', [ProgramFlowController::class, 'show'])->name('program-flow.show');

@@ -58,10 +58,9 @@ class EventPostController extends Controller
                 $mediaType = str_starts_with($mediaFile->getMimeType(), 'image/') ? 'image' : 'video';
                 
                 $post->media()->create([
-                    'url' => Storage::url($path),
+                    'path' => $path,
                     'type' => $mediaType,
-                    'file_name' => $mediaFile->getClientOriginalName(),
-                    'file_size' => $mediaFile->getSize(),
+                    'source' => 'upload',
                 ]);
             }
         }

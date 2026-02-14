@@ -66,10 +66,10 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         @foreach($post->media as $media)
                             @if($media->type === 'image')
-                                <img src="{{ $media->url }}" alt="Post image" class="w-full h-48 object-cover rounded-lg">
+                                <img src="{{ Storage::url($media->path) }}" alt="Post image" class="w-full h-48 object-cover rounded-lg">
                             @elseif($media->type === 'video')
                                 <video controls class="w-full h-48 object-cover rounded-lg">
-                                    <source src="{{ $media->url }}" type="video/mp4">
+                                    <source src="{{ Storage::url($media->path) }}" type="video/mp4">
                                 </video>
                             @endif
                         @endforeach

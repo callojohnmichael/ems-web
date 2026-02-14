@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 
 use App\Models\Event;
-use App\Models\Post;
+use App\Models\EventPost;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

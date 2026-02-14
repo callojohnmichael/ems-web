@@ -28,16 +28,16 @@ class EventPost extends Model
 
     public function media()
     {
-        return $this->hasMany(PostMedia::class);
+        return $this->hasMany(PostMedia::class, 'event_post_id');
     }
 
     public function reactions()
     {
-        return $this->hasMany(PostReaction::class);
+        return $this->hasMany(PostReaction::class, 'event_post_id');
     }
 
     public function comments()
     {
-        return $this->hasMany(PostComment::class);
+        return $this->hasMany(PostComment::class, 'event_post_id');
     }
 }

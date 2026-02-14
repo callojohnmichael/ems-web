@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PostComment extends Model
 {
     protected $fillable = [
-        'post_id',
+        'event_post_id',
         'user_id',
         'body',
     ];
 
     public function post(): BelongsTo
     {
-        return $this->belongsTo(Post::class);
+        return $this->belongsTo(EventPost::class, 'event_post_id');
     }
 
     public function user(): BelongsTo
