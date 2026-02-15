@@ -145,5 +145,75 @@ document.addEventListener('click', function (e) {
     }
 });
 
+(function () {
+    var lightbox = document.getElementById('lightbox');
+    var lightboxImg = document.getElementById('lightbox-img');
+    var lightboxVideo = document.getElementById('lightbox-video');
+    var lightboxClose = document.getElementById('lightbox-close');
+    if (!lightbox || !lightboxImg || !lightboxVideo || !lightboxClose) return;
+
+    function openLightbox(fullUrl, mediaType) {
+        lightboxImg.classList.add('hidden');
+        lightboxVideo.classList.add('hidden');
+        lightboxVideo.pause();
+        lightboxVideo.removeAttribute('src');
+        if (mediaType === 'video') {
+            lightboxVideo.src = fullUrl;
+            lightboxVideo.classList.remove('hidden');
+            lightboxVideo.play();
+        } else {
+            lightboxImg.src = fullUrl;
+            lightboxImg.alt = 'Enlarged media';
+            lightboxImg.classList.remove('hidden');
+        }
+        lightbox.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        lightboxClose.focus();
+    }
+
+    function closeLightbox() {
+        lightbox.classList.add('hidden');
+        document.body.style.overflow = '';
+        lightboxVideo.pause();
+    }
+
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeLightbox();
+    });
+    lightbox.addEventListener('click', function (e) {
+        if (e.target === lightbox) closeLightbox();
+    });
+
+    document.querySelectorAll('.js-lightbox-open').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var url = btn.getAttribute('data-full-url');
+            var type = btn.getAttribute('data-media-type') || 'image';
+            if (url) openLightbox(url, type);
+        });
+    });
+})();
+
+document.querySelectorAll('.js-caption-read-more').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        const postId = btn.dataset.postId;
+        const fullText = btn.dataset.full || '';
+        const summaryEl = document.getElementById('caption-summary-' + postId);
+        const fullEl = document.getElementById('caption-full-' + postId);
+        if (!summaryEl || !fullEl) return;
+        if (fullEl.classList.contains('hidden')) {
+            fullEl.textContent = fullText;
+            fullEl.classList.remove('hidden');
+            summaryEl.classList.add('hidden');
+            btn.textContent = 'Show less';
+        } else {
+            fullEl.classList.add('hidden');
+            fullEl.textContent = '';
+            summaryEl.classList.remove('hidden');
+            btn.textContent = 'Read more';
+        }
+    });
+});
+
 window.toggleComments = toggleComments;
 window.toggleCommentsMore = toggleCommentsMore;

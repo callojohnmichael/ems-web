@@ -21,6 +21,83 @@
             </div>
         </div>
 
+        {{-- MULTIMEDIA INSIGHTS SUMMARY --}}
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Posts (30d)</p>
+                <p class="mt-1 text-xl font-semibold text-gray-900">{{ $multimediaSummary['total_posts'] }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-xs font-medium uppercase tracking-wide text-gray-500">With AI</p>
+                <p class="mt-1 text-xl font-semibold text-gray-900">{{ $multimediaSummary['posts_with_ai'] }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Images / Videos</p>
+                <p class="mt-1 text-xl font-semibold text-gray-900">{{ $multimediaSummary['media_images'] }} / {{ $multimediaSummary['media_videos'] }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Top event</p>
+                <p class="mt-1 truncate text-lg font-semibold text-gray-900" title="{{ $multimediaSummary['top_event_name'] ?? '—' }}">{{ $multimediaSummary['top_event_name'] ?? '—' }}</p>
+                @if($multimediaSummary['top_event_posts'] > 0)
+                    <p class="text-xs text-gray-500">{{ $multimediaSummary['top_event_posts'] }} posts</p>
+                @endif
+            </div>
+        </div>
+        @can('view reports')
+            <p class="text-sm text-gray-500">
+                <a href="{{ route('reports.multimedia') }}" class="font-medium text-indigo-600 hover:text-indigo-700">View full report</a>
+            </p>
+        @endcan
+
+        {{-- VIEW TOGGLE --}}
+        <div class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+            <span class="text-sm font-medium text-gray-700">View:</span>
+            <div class="flex gap-2">
+                <a href="{{ route('multimedia.index', array_merge(request()->query(), ['view' => null])) }}" class="rounded-lg px-4 py-2 text-sm font-medium transition {{ request('view') !== 'gallery' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Feed</a>
+                <a href="{{ route('multimedia.index', array_merge(request()->query(), ['view' => 'gallery'])) }}" class="rounded-lg px-4 py-2 text-sm font-medium transition {{ request('view') === 'gallery' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Gallery</a>
+            </div>
+        </div>
+
+        {{-- FILTER BAR --}}
+        <form method="GET" action="{{ route('multimedia.index') }}" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <input type="hidden" name="view" value="{{ request('view') }}">
+            <div class="flex flex-wrap items-end gap-3">
+                <div class="min-w-[120px]">
+                    <label for="filter_event_id" class="block text-xs font-medium text-gray-500">Event</label>
+                    <select id="filter_event_id" name="event_id" class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">All events</option>
+                        @foreach($eventsForFilter as $ev)
+                            <option value="{{ $ev->id }}" {{ request('event_id') == $ev->id ? 'selected' : '' }}>{{ Str::limit($ev->title, 40) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="min-w-[120px]">
+                    <label for="filter_type" class="block text-xs font-medium text-gray-500">Type</label>
+                    <select id="filter_type" name="type" class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">All types</option>
+                        @foreach(['invitation','announcement','highlight','thank_you','reminder','advertisement'] as $t)
+                            <option value="{{ $t }}" {{ request('type') === $t ? 'selected' : '' }}>{{ ucfirst($t) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="filter_date_from" class="block text-xs font-medium text-gray-500">From</label>
+                    <input type="date" id="filter_date_from" name="date_from" value="{{ request('date_from') }}" class="mt-1 rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="filter_date_to" class="block text-xs font-medium text-gray-500">To</label>
+                    <input type="date" id="filter_date_to" name="date_to" value="{{ request('date_to') }}" class="mt-1 rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">Sort</span>
+                    <a href="{{ route('multimedia.index', array_merge(request()->query(), ['sort' => 'latest'])) }}" class="rounded px-2 py-1 text-sm {{ request('sort', 'latest') === 'latest' ? 'bg-indigo-100 font-medium text-indigo-800' : 'text-gray-600 hover:bg-gray-100' }}">Latest</a>
+                    <a href="{{ route('multimedia.index', array_merge(request()->query(), ['sort' => 'oldest'])) }}" class="rounded px-2 py-1 text-sm {{ request('sort') === 'oldest' ? 'bg-indigo-100 font-medium text-indigo-800' : 'text-gray-600 hover:bg-gray-100' }}">Oldest</a>
+                </div>
+                <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">Apply</button>
+                <a href="{{ route('multimedia.index') }}" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Clear</a>
+            </div>
+        </form>
+
         {{-- SUCCESS MESSAGE --}}
         @if(session('success'))
             <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-green-800">
@@ -30,7 +107,7 @@
 
         {{-- POSTS --}}
         @forelse($posts as $post)
-            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-3">
+            <div id="post-{{ $post->id }}" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 sm:p-6">
 
                 {{-- POST HEADER --}}
                 <div class="flex items-start justify-between gap-4">
@@ -50,45 +127,83 @@
                     </span>
                 </div>
 
-                {{-- CAPTION --}}
+                {{-- CAPTION / AI NARRATIVE (structured) --}}
                 @if($post->caption)
-                    <div class="prose prose-sm max-w-none">
-                        <p class="text-gray-700 whitespace-pre-line">{{ $post->caption }}</p>
+                    @php
+                        $parsed = $post->parsed_caption;
+                        $isLong = strlen($parsed['full']) > 280;
+                        $showReadMore = $isLong && $parsed['has_narrative'];
+                    @endphp
+                    <div class="prose prose-sm max-w-none max-w-2xl">
+                        <div class="{{ $post->ai_generated_content ? 'border-l-4 border-indigo-200 bg-indigo-50/50 pl-4 pr-3 py-3 rounded-r-lg' : '' }}">
+                            @if($showReadMore)
+                                <div class="caption-summary text-gray-700 text-sm" id="caption-summary-{{ $post->id }}">
+                                    <p class="whitespace-pre-line">{{ Str::limit($parsed['summary'], 280) }}</p>
+                                    @if(count($parsed['story_elements']) > 0)
+                                        <p class="mt-2 font-medium text-gray-800">Story elements</p>
+                                        <ul class="mt-1 list-disc list-inside space-y-0.5 text-gray-700">
+                                            @foreach(array_slice($parsed['story_elements'], 0, 5) as $el)
+                                                <li>{{ $el }}</li>
+                                            @endforeach
+                                            @if(count($parsed['story_elements']) > 5)
+                                                <li class="text-gray-500">+ {{ count($parsed['story_elements']) - 5 }} more</li>
+                                            @endif
+                                        </ul>
+                                    @endif
+                                    <button type="button" class="mt-2 text-indigo-600 hover:text-indigo-700 text-sm font-medium js-caption-read-more" data-post-id="{{ $post->id }}" data-full="{{ e($parsed['full']) }}">
+                                        Read more
+                                    </button>
+                                </div>
+                                <div class="caption-full hidden text-gray-700 text-sm whitespace-pre-line" id="caption-full-{{ $post->id }}"></div>
+                            @else
+                                <p class="text-gray-700 whitespace-pre-line">{{ $parsed['summary'] }}</p>
+                                @if(count($parsed['story_elements']) > 0)
+                                    <p class="mt-2 font-medium text-gray-800">Story elements</p>
+                                    <ul class="mt-1 list-disc list-inside space-y-0.5 text-gray-700">
+                                        @foreach($parsed['story_elements'] as $el)
+                                            <li>{{ $el }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            @endif
+                        </div>
                     </div>
                 @endif
 
                 {{-- MEDIA --}}
                 @if($post->media->count() > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         @foreach($post->media as $media)
-                            <div class="relative group">
+                            @php
+                                $mediaAlt = $post->event?->title ? ($media->type === 'image' ? 'Image for ' . $post->event->title : 'Video for ' . $post->event->title) : 'Post media';
+                                $mediaSrc = ($media->type === 'image' && $media->thumbnail_path) ? asset('storage/' . $media->thumbnail_path) : asset('storage/' . $media->path);
+                            @endphp
+                            <div class="relative group aspect-video w-full overflow-hidden rounded-lg bg-black">
                                 @if($media->type === 'image')
-                                    <img src="{{ asset('storage/' . $media->path) }}" 
-                                         alt="Post media" 
-                                         class="w-full h-48 object-cover rounded-lg">
+                                    <img src="{{ $mediaSrc }}" 
+                                         alt="{{ $mediaAlt }}" 
+                                         loading="lazy"
+                                         class="h-full w-full object-cover rounded-lg js-lightbox-src"
+                                         data-full-url="{{ asset('storage/' . $media->path) }}"
+                                         data-media-type="image">
                                 @elseif($media->type === 'video')
-                                    <div class="relative w-full h-48 bg-black rounded-lg overflow-hidden">
-                                        <video class="w-full h-full object-cover" controls>
-                                            <source src="{{ asset('storage/' . $media->path) }}" type="video/mp4">
-                                            Your browser does not support the video tag.
-                                        </video>
-                                        
-                                        {{-- AI Generated Video Badge --}}
-                                        @if($media->metadata && json_decode($media->metadata)->ai_generated ?? false)
-                                            <div class="absolute top-2 left-2 bg-gradient-to-r from-green-500 to-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                                                🤖 AI Generated
-                                            </div>
-                                        @endif
-                                    </div>
+                                    <video class="h-full w-full object-cover js-lightbox-src" controls preload="metadata" data-full-url="{{ asset('storage/' . $media->path) }}" data-media-type="video">
+                                        <source src="{{ asset('storage/' . $media->path) }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    {{-- AI Generated Video Badge --}}
+                                    @if($media->metadata && str_contains((string) $media->metadata, 'ai_generated'))
+                                        <div class="absolute top-2 left-2 bg-gradient-to-r from-green-500 to-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                            AI Generated
+                                        </div>
+                                    @endif
                                 @endif
 
-                                {{-- Media Actions --}}
-                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                    <a href="{{ asset('storage/' . $media->path) }}" 
-                                       target="_blank"
-                                       class="bg-white text-gray-800 px-3 py-1 rounded-lg text-sm font-medium hover:bg-gray-100 transition">
+                                {{-- Media Actions (lightbox / full size) --}}
+                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                    <button type="button" class="js-lightbox-open bg-white text-gray-800 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-100 transition" data-full-url="{{ asset('storage/' . $media->path) }}" data-media-type="{{ $media->type }}">
                                         View Full Size
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         @endforeach
@@ -252,6 +367,15 @@
             {{ $posts->links() }}
         </div>
 
+    </div>
+
+    {{-- Lightbox overlay --}}
+    <div id="lightbox" class="fixed inset-0 z-50 hidden bg-black/90 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Media viewer">
+        <button type="button" id="lightbox-close" class="absolute top-4 right-4 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 focus:outline focus:ring-2 focus:ring-white" aria-label="Close">×</button>
+        <div class="relative max-h-full max-w-full">
+            <img id="lightbox-img" src="" alt="" class="max-h-[90vh] max-w-full rounded object-contain hidden">
+            <video id="lightbox-video" class="max-h-[90vh] max-w-full rounded hidden" controls></video>
+        </div>
     </div>
 
     @vite(['resources/js/multimedia-index.js'])

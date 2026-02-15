@@ -6,6 +6,7 @@
         ['label' => 'Venues', 'route' => 'reports.venues', 'section' => 'venues'],
         ['label' => 'Finance', 'route' => 'reports.finance', 'section' => 'finance'],
         ['label' => 'Engagement', 'route' => 'reports.engagement', 'section' => 'engagement'],
+        ['label' => 'Multimedia', 'route' => 'reports.multimedia', 'section' => 'multimedia'],
         ['label' => 'Support', 'route' => 'reports.support', 'section' => 'support'],
     ];
     $currentRoute = match ($section) {
@@ -15,6 +16,7 @@
         'venues' => 'reports.venues',
         'finance' => 'reports.finance',
         'engagement' => 'reports.engagement',
+        'multimedia' => 'reports.multimedia',
         'support' => 'reports.support',
         default => 'reports.index',
     };

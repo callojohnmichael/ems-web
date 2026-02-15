@@ -8,6 +8,8 @@ use App\Models\Post;
 use App\Models\SupportTicket;
 use App\Models\Venue;
 use App\Services\EventService;
+use App\Services\MultimediaAnalyticsService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +18,8 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     public function __construct(
-        private EventService $eventService
+        private EventService $eventService,
+        private MultimediaAnalyticsService $multimediaAnalytics
     ) {}
 
     /**
@@ -95,8 +98,12 @@ class DashboardController extends Controller
             ->orderBy('end_at', 'desc')
             ->take(5)
             ->get();
-        
-        return view('dashboard.media', compact('upcomingEvents', 'recentEvents'));
+
+        $periodEnd = Carbon::now();
+        $periodStart = Carbon::now()->subDays(30);
+        $multimediaSummary = $this->multimediaAnalytics->summary($periodStart, $periodEnd);
+
+        return view('dashboard.media', compact('upcomingEvents', 'recentEvents', 'multimediaSummary'));
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use App\Models\EventPost;
 use App\Models\Participant;
 use App\Models\Post;
 use App\Models\SupportTicket;
@@ -430,6 +431,158 @@ class ReportController extends Controller
         );
     }
 
+    public function multimedia(Request $request): View
+    {
+        [$startDate, $endDate] = $this->resolveDateRange($request);
+
+        $postsQuery = EventPost::query()
+            ->join('events', 'events.id', '=', 'event_posts.event_id')
+            ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]);
+
+        $postsCount = (clone $postsQuery)->count();
+
+        $commentsCount = 0;
+        if (Schema::hasTable('post_comments')) {
+            $commentsCount = DB::table('post_comments')
+                ->join('event_posts', 'event_posts.id', '=', 'post_comments.event_post_id')
+                ->join('events', 'events.id', '=', 'event_posts.event_id')
+                ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                ->count();
+        }
+
+        $reactionsCount = 0;
+        if (Schema::hasTable('post_reactions')) {
+            $reactionsCount = DB::table('post_reactions')
+                ->join('event_posts', 'event_posts.id', '=', 'post_reactions.event_post_id')
+                ->join('events', 'events.id', '=', 'event_posts.event_id')
+                ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                ->count();
+        }
+
+        $postsWithAi = (clone $postsQuery)->where('event_posts.ai_generated_content', true)->count();
+
+        $postTypeRows = (clone $postsQuery)
+            ->select('event_posts.type', DB::raw('COUNT(*) as total'))
+            ->groupBy('event_posts.type')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => [
+                'Type' => ucfirst($row->type ?? 'post'),
+                'Total' => (int) $row->total,
+            ])
+            ->toArray();
+
+        $topEventRows = (clone $postsQuery)
+            ->select('events.title', DB::raw('COUNT(event_posts.id) as total_posts'))
+            ->groupBy('events.title')
+            ->orderByDesc('total_posts')
+            ->take(20)
+            ->get()
+            ->map(fn ($row) => [
+                'Event' => $row->title,
+                'Posts' => (int) $row->total_posts,
+            ])
+            ->toArray();
+
+        $mediaTypeRows = [];
+        $mediaSourceRows = [];
+        if (Schema::hasTable('post_media')) {
+            $mediaTypeRows = DB::table('post_media')
+                ->join('event_posts', 'event_posts.id', '=', 'post_media.event_post_id')
+                ->join('events', 'events.id', '=', 'event_posts.event_id')
+                ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                ->select('post_media.type', DB::raw('COUNT(*) as total'))
+                ->groupBy('post_media.type')
+                ->get()
+                ->map(fn ($row) => [
+                    'Type' => ucfirst($row->type ?? 'media'),
+                    'Total' => (int) $row->total,
+                ])
+                ->toArray();
+
+            $mediaSourceRows = DB::table('post_media')
+                ->join('event_posts', 'event_posts.id', '=', 'post_media.event_post_id')
+                ->join('events', 'events.id', '=', 'event_posts.event_id')
+                ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                ->select('post_media.source', DB::raw('COUNT(*) as total'))
+                ->groupBy('post_media.source')
+                ->get()
+                ->map(fn ($row) => [
+                    'Source' => ucfirst(str_replace('_', ' ', $row->source ?? 'upload')),
+                    'Total' => (int) $row->total,
+                ])
+                ->toArray();
+        }
+
+        $uploadRow = collect($mediaSourceRows)->firstWhere('Source', 'Upload');
+        $aiRow = collect($mediaSourceRows)->firstWhere('Source', 'Ai generated') ?? collect($mediaSourceRows)->firstWhere('Source', 'Ai_generated');
+        $mediaUploadCount = (int) ($uploadRow['Total'] ?? 0);
+        $mediaAiCount = (int) ($aiRow['Total'] ?? 0);
+        $firstEvent = collect($topEventRows)->first();
+        $topEventName = $firstEvent['Event'] ?? null;
+        $topEventPosts = (int) ($firstEvent['Posts'] ?? 0);
+        $firstType = collect($postTypeRows)->first();
+        $topType = $firstType['Type'] ?? null;
+
+        $charts = [
+            $this->makeChart(
+                id: 'multimedia-posts-by-type',
+                title: 'Posts by Type',
+                type: 'bar',
+                labels: array_column($postTypeRows, 'Type'),
+                data: array_map(fn ($row) => (int) $row['Total'], $postTypeRows),
+                datasetLabel: 'Posts'
+            ),
+        ];
+        if (count($mediaTypeRows) > 0) {
+            $charts[] = $this->makeChart(
+                id: 'multimedia-media-type',
+                title: 'Media by Type',
+                type: 'doughnut',
+                labels: array_column($mediaTypeRows, 'Type'),
+                data: array_map(fn ($row) => (int) $row['Total'], $mediaTypeRows),
+                datasetLabel: 'Media',
+                fullWidth: true
+            );
+        }
+        if (count($mediaSourceRows) > 0) {
+            $charts[] = $this->makeChart(
+                id: 'multimedia-media-source',
+                title: 'Media: Upload vs AI',
+                type: 'bar',
+                labels: array_column($mediaSourceRows, 'Source'),
+                data: array_map(fn ($row) => (int) $row['Total'], $mediaSourceRows),
+                datasetLabel: 'Count'
+            );
+        }
+
+        return $this->reportView(
+            request: $request,
+            section: 'multimedia',
+            title: 'Multimedia & AI',
+            cards: [
+                'Posts' => $postsCount,
+                'Comments' => $commentsCount,
+                'Reactions' => $reactionsCount,
+                'Posts with AI' => $postsWithAi,
+            ],
+            columns: ['Event', 'Posts'],
+            rows: $topEventRows,
+            charts: $charts,
+            interpretations: $this->insights->multimedia([
+                'posts' => $postsCount,
+                'comments' => $commentsCount,
+                'reactions' => $reactionsCount,
+                'posts_with_ai' => $postsWithAi,
+                'media_upload' => $mediaUploadCount,
+                'media_ai' => $mediaAiCount,
+                'top_event_name' => $topEventName,
+                'top_event_posts' => $topEventPosts,
+                'top_type' => $topType,
+            ])
+        );
+    }
+
     public function support(Request $request): View
     {
         [$startDate, $endDate] = $this->resolveDateRange($request);
@@ -499,6 +652,7 @@ class ReportController extends Controller
             'venues' => fn () => $this->venues($request),
             'finance' => fn () => $this->finance($request),
             'engagement' => fn () => $this->engagement($request),
+            'multimedia' => fn () => $this->multimedia($request),
             'support' => fn () => $this->support($request),
         ];
 
@@ -577,6 +731,18 @@ class ReportController extends Controller
             'engagement' => [
                 'columns' => ['Event', 'Posts'],
                 'rows' => $this->engagementRows($startDate, $endDate),
+            ],
+            'multimedia' => [
+                'columns' => ['Event', 'Posts'],
+                'rows' => EventPost::query()
+                    ->join('events', 'events.id', '=', 'event_posts.event_id')
+                    ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                    ->select('events.title', DB::raw('COUNT(event_posts.id) as total_posts'))
+                    ->groupBy('events.title')
+                    ->orderByDesc('total_posts')
+                    ->get()
+                    ->map(fn ($row) => ['Event' => $row->title, 'Posts' => (int) $row->total_posts])
+                    ->toArray(),
             ],
             'support' => [
                 'columns' => ['Status', 'Tickets'],

@@ -2,30 +2,66 @@
 
 namespace App\Http\Controllers;
 
-
 use App\Models\Event;
 use App\Models\EventPost;
+use App\Services\MultimediaAnalyticsService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
 use Illuminate\View\View;
 
 class MultimediaController extends Controller
 {
+    public function __construct(
+        private MultimediaAnalyticsService $multimediaAnalytics
+    ) {}
+
     public function index(Request $request): View
     {
-        $posts = EventPost::with([
+        $query = EventPost::with([
             'event',
             'user',
             'media',
             'reactions',
             'comments.user',
-        ])
-        ->latest()
-        ->paginate(10);
+        ]);
 
-        return view('multimedia.index', compact('posts'));
+        if ($request->filled('event_id')) {
+            $query->where('event_id', $request->event_id);
+        }
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $sort = $request->query('sort', 'latest');
+        if ($sort === 'oldest') {
+            $query->oldest();
+        } else {
+            $query->latest();
+        }
+
+        $posts = $query->paginate(10)->withQueryString();
+
+        $periodEnd = Carbon::now();
+        $periodStart = Carbon::now()->subDays(30);
+        $multimediaSummary = $this->multimediaAnalytics->summary($periodStart, $periodEnd);
+
+        $eventsForFilter = Event::query()
+            ->whereHas('multimediaPosts')
+            ->orderByDesc('start_at')
+            ->take(100)
+            ->get(['id', 'title']);
+
+        $view = $request->query('view') === 'gallery' ? 'multimedia.gallery' : 'multimedia.index';
+
+        return view($view, compact('posts', 'multimediaSummary', 'eventsForFilter'));
     }
 
     public function posts(): View

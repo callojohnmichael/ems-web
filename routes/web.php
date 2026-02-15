@@ -120,9 +120,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/venues', [ReportController::class, 'venues'])->name('venues');
             Route::get('/finance', [ReportController::class, 'finance'])->name('finance');
             Route::get('/engagement', [ReportController::class, 'engagement'])->name('engagement');
+            Route::get('/multimedia', [ReportController::class, 'multimedia'])->name('multimedia');
             Route::get('/support', [ReportController::class, 'support'])->name('support');
             Route::get('/export/{section}', [ReportController::class, 'export'])
-                ->where('section', 'overview|pipeline|participants|venues|finance|engagement|support')
+                ->where('section', 'overview|pipeline|participants|venues|finance|engagement|multimedia|support')
                 ->name('export');
         });
 

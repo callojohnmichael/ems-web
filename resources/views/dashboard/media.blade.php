@@ -6,6 +6,37 @@
                 <p class="mt-2 text-gray-600">Manage posts, media, and view upcoming events</p>
             </div>
 
+            {{-- Multimedia insights summary (30d) --}}
+            <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <h3 class="text-sm font-semibold text-gray-900">Multimedia insights (last 30 days)</h3>
+                <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div>
+                        <p class="text-xs text-gray-500">Posts</p>
+                        <p class="text-lg font-semibold text-gray-900">{{ $multimediaSummary['total_posts'] }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">With AI</p>
+                        <p class="text-lg font-semibold text-gray-900">{{ $multimediaSummary['posts_with_ai'] }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Images / Videos</p>
+                        <p class="text-lg font-semibold text-gray-900">{{ $multimediaSummary['media_images'] }} / {{ $multimediaSummary['media_videos'] }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Top event</p>
+                        <p class="truncate text-lg font-semibold text-gray-900" title="{{ $multimediaSummary['top_event_name'] ?? '—' }}">{{ $multimediaSummary['top_event_name'] ?? '—' }}</p>
+                        @if($multimediaSummary['top_event_posts'] > 0)
+                            <p class="text-xs text-gray-500">{{ $multimediaSummary['top_event_posts'] }} posts</p>
+                        @endif
+                    </div>
+                </div>
+                @can('view reports')
+                    <p class="mt-3 text-sm text-gray-500">
+                        <a href="{{ route('reports.multimedia') }}" class="font-medium text-indigo-600 hover:text-indigo-700">View full report</a>
+                    </p>
+                @endcan
+            </div>
+
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
                 <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-100">
                     <div class="p-5">

@@ -339,4 +339,69 @@ class ReportInsightsService
 
         return $insights;
     }
+
+    /**
+     * @return array<int, array{text: string, type: 'info'|'success'|'warning'}>
+     */
+    public function multimedia(array $data): array
+    {
+        $posts = (int) ($data['posts'] ?? 0);
+        $comments = (int) ($data['comments'] ?? 0);
+        $reactions = (int) ($data['reactions'] ?? 0);
+        $postsWithAi = (int) ($data['posts_with_ai'] ?? 0);
+        $mediaUpload = (int) ($data['media_upload'] ?? 0);
+        $mediaAi = (int) ($data['media_ai'] ?? 0);
+        $topEventName = $data['top_event_name'] ?? null;
+        $topEventPosts = (int) ($data['top_event_posts'] ?? 0);
+        $topType = $data['top_type'] ?? null;
+
+        $insights = [];
+
+        if ($posts === 0) {
+            $insights[] = [
+                'text' => 'No multimedia posts in this period. Create posts from the Multimedia area to see analytics here.',
+                'type' => 'info',
+            ];
+
+            return $insights;
+        }
+
+        $insights[] = [
+            'text' => "{$posts} " . str('post')->plural($posts) . ", {$comments} " . str('comment')->plural($comments) . ", {$reactions} " . str('reaction')->plural($reactions) . " — engagement on event content.",
+            'type' => 'info',
+        ];
+
+        if ($postsWithAi > 0) {
+            $pct = $posts > 0 ? (int) round(($postsWithAi / $posts) * 100) : 0;
+            $insights[] = [
+                'text' => "{$pct}% of posts use AI captions or narrative ({$postsWithAi} of {$posts}).",
+                'type' => 'info',
+            ];
+        }
+
+        if ($topType !== null && $topType !== '') {
+            $insights[] = [
+                'text' => 'Most used post type: ' . ucfirst($topType) . '.',
+                'type' => 'info',
+            ];
+        }
+
+        if ($topEventName !== null && $topEventName !== '' && $topEventPosts > 0) {
+            $insights[] = [
+                'text' => "\"{$topEventName}\" has the most posts ({$topEventPosts}). Focus or replicate content strategy here.",
+                'type' => 'info',
+            ];
+        }
+
+        if ($mediaAi > 0 && ($mediaUpload + $mediaAi) > 0) {
+            $totalMedia = $mediaUpload + $mediaAi;
+            $aiPct = (int) round(($mediaAi / $totalMedia) * 100);
+            $insights[] = [
+                'text' => "{$aiPct}% of media items are AI-generated ({$mediaAi} of {$totalMedia}).",
+                'type' => 'info',
+            ];
+        }
+
+        return $insights;
+    }
 }
