@@ -102,16 +102,6 @@
                             </div>
 
                             <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-                                <label for="remember_me" class="flex items-center gap-2 text-slate-600">
-                                    <input
-                                        id="remember_me"
-                                        name="remember"
-                                        type="checkbox"
-                                        class="h-4 w-4 rounded border-slate-300 text-[#6f62f7] focus:ring-[#6f62f7]/30"
-                                    />
-                                    Remember me
-                                </label>
-
                                 @if (Route::has('password.request'))
                                     <a class="text-slate-500 transition hover:text-slate-700" href="{{ route('password.request') }}">
                                         Forgot your password?

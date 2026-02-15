@@ -69,8 +69,7 @@ class OtpVerificationController extends Controller
         $request->session()->forget('otp_user_id');
 
         $user = User::findOrFail($userId);
-        Auth::guard('web')->login($user, $request->session()->get('otp_remember', false));
-        $request->session()->forget('otp_remember');
+        Auth::guard('web')->login($user, false);
         $request->session()->regenerate();
         $request->session()->flash('success', __('Login Successful! Welcome to the School Event Management System.'));
 
