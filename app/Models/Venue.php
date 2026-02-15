@@ -85,11 +85,7 @@ public static function hasLocationBookingConflict(
                 });
         })
         ->whereHas('event', function (Builder $q) {
-            $q->whereIn('status', [
-                Event::STATUS_PENDING_APPROVAL,
-                Event::STATUS_APPROVED,
-                Event::STATUS_PUBLISHED,
-            ]);
+            $q->whereNotIn('status', ['rejected', 'deleted', 'cancelled', 'completed']);
         });
 
     if ($excludeEventId) {

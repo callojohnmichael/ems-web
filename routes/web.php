@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VenueController;
 use App\Http\Controllers\EventPostController;
+use App\Http\Controllers\EventRescheduleSuggestionController;
 use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PostCommentController;
 
@@ -69,6 +70,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/approve', [EventController::class, 'approve'])->name('events.approve');
     Route::post('/events/{event}/reject', [EventController::class, 'reject'])->name('events.reject');
     Route::post('/events/{event}/publish', [EventController::class, 'publish'])->name('events.publish');
+    Route::get('/events/{event}/reschedule-suggestions/create', [EventRescheduleSuggestionController::class, 'create'])->name('events.reschedule-suggestions.create');
+    Route::post('/events/{event}/reschedule-suggestions', [EventRescheduleSuggestionController::class, 'store'])->name('events.reschedule-suggestions.store');
+    Route::post('/reschedule-suggestions/{suggestion}/accept', [EventRescheduleSuggestionController::class, 'accept'])->name('reschedule-suggestions.accept');
+    Route::post('/reschedule-suggestions/{suggestion}/decline', [EventRescheduleSuggestionController::class, 'decline'])->name('reschedule-suggestions.decline');
 
    
 

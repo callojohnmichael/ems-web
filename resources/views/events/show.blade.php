@@ -1,5 +1,25 @@
     <x-app-layout>
-    <div class="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8 space-y-6">
+    <div class="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8 space-y-6"
+         x-data="{ toastOpen: {{ session('toast') ? 'true' : 'false' }} }"
+         x-init="if (toastOpen) { setTimeout(() => toastOpen = false, 4000) }">
+
+        {{-- TOAST (e.g. after suggest reschedule) --}}
+        @if(session('toast'))
+            <div x-show="toastOpen"
+                 x-transition
+                 x-cloak
+                 class="fixed bottom-6 right-6 z-50 max-w-sm rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 shadow-lg">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <svg class="h-5 w-5 flex-shrink-0 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        <span>{{ session('toast') }}</span>
+                    </div>
+                    <button type="button" @click="toastOpen = false" class="text-green-700 hover:text-green-900">
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    </button>
+                </div>
+            </div>
+        @endif
 
         {{-- SUCCESS MESSAGE --}}
         @if(session('success'))
@@ -7,6 +27,15 @@
                 <p class="text-sm font-semibold text-green-800">
                     {{ session('success') }}
                 </p>
+            </div>
+        @endif
+        @if($errors->any())
+            <div class="rounded-md bg-red-50 p-4 mb-6 border border-red-200">
+                <ul class="text-sm text-red-700 list-disc list-inside">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
         @endif
 
@@ -199,6 +228,146 @@
                 </table>
             </div>
         </div>
+
+        {{-- ================= RESCHEDULE REQUESTS (suggestions + status) ================= --}}
+        @php
+            $allRescheduleSuggestions = $event->rescheduleSuggestions;
+            $pendingRescheduleSuggestions = $allRescheduleSuggestions->where('status', 'pending');
+        @endphp
+        <div class="bg-white shadow rounded-lg border overflow-hidden border-gray-200">
+            <div class="px-6 py-4 border-b bg-gray-50 flex items-center justify-between flex-wrap gap-2">
+                <h3 class="text-lg font-bold text-gray-900">Reschedule requests</h3>
+                <div class="flex items-center gap-3">
+                    @if($allRescheduleSuggestions->isNotEmpty())
+                        <span class="text-xs text-gray-500">
+                            {{ $allRescheduleSuggestions->count() }} total
+                            @if($pendingRescheduleSuggestions->isNotEmpty())
+                                · <span class="font-semibold text-amber-700">{{ $pendingRescheduleSuggestions->count() }} pending</span>
+                            @endif
+                        </span>
+                    @endif
+                    @can('suggestReschedule', $event)
+                        <a href="{{ route('events.reschedule-suggestions.create', $event) }}" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-semibold text-amber-800 hover:bg-amber-100">
+                            Suggest reschedule
+                        </a>
+                    @endcan
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                @if($allRescheduleSuggestions->isEmpty())
+                    <div class="px-6 py-8 text-center text-sm text-gray-500">
+                        No reschedule requests yet.
+                        @can('suggestReschedule', $event)
+                            <a href="{{ route('events.reschedule-suggestions.create', $event) }}" class="ml-1 text-indigo-600 hover:text-indigo-800 font-medium">Suggest reschedule</a>
+                        @endcan
+                    </div>
+                @else
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Suggested by</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Suggested dates</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Reason</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                @can('update', $event)
+                                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                                @endcan
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach($allRescheduleSuggestions as $suggestion)
+                                <tr class="hover:bg-gray-50/50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ $suggestion->requestedBy->name ?? '—' }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        {{ $suggestion->suggested_start_at->format('M j, Y g:i A') }} – {{ $suggestion->suggested_end_at->format('g:i A') }}
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-600 max-w-xs">
+                                        {{ Str::limit($suggestion->reason, 80) ?: '—' }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if($suggestion->status === 'pending')
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Pending</span>
+                                        @elseif($suggestion->status === 'accepted')
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Accepted</span>
+                                        @else
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Declined</span>
+                                        @endif
+                                    </td>
+                                    @can('update', $event)
+                                        <td class="px-6 py-4 text-right whitespace-nowrap">
+                                            @if($suggestion->status === 'pending')
+                                                <form action="{{ route('reschedule-suggestions.accept', $suggestion) }}" method="POST" class="inline reschedule-accept-form">
+                                                    @csrf
+                                                    <button type="button" class="reschedule-accept-btn text-green-600 hover:text-green-800 text-sm font-semibold mr-3">Accept</button>
+                                                </form>
+                                                <form action="{{ route('reschedule-suggestions.decline', $suggestion) }}" method="POST" class="inline reschedule-decline-form">
+                                                    @csrf
+                                                    <button type="button" class="reschedule-decline-btn text-red-600 hover:text-red-800 text-sm font-semibold">Decline</button>
+                                                </form>
+                                            @else
+                                                <span class="text-gray-400 text-sm">—</span>
+                                            @endif
+                                        </td>
+                                    @endcan
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
+            </div>
+        </div>
+        @can('update', $event)
+            @if($pendingRescheduleSuggestions->isNotEmpty())
+                @push('styles')
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+                @endpush
+                @push('scripts')
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.querySelectorAll('.reschedule-accept-btn').forEach(function(btn) {
+                            btn.addEventListener('click', function() {
+                                var form = this.closest('form');
+                                if (typeof Swal === 'undefined') {
+                                    if (confirm('Accept this reschedule suggestion? The event dates will be updated and the requester will be notified.')) form.submit();
+                                    return;
+                                }
+                                Swal.fire({
+                                    title: 'Accept reschedule suggestion?',
+                                    text: 'The event dates will be updated and the requester will be notified.',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#16a34a',
+                                    cancelButtonColor: '#6b7280',
+                                    confirmButtonText: 'Yes, accept'
+                                }).then(function(result) { if (result.isConfirmed) form.submit(); });
+                            });
+                        });
+                        document.querySelectorAll('.reschedule-decline-btn').forEach(function(btn) {
+                            btn.addEventListener('click', function() {
+                                var form = this.closest('form');
+                                if (typeof Swal === 'undefined') {
+                                    if (confirm('Decline this reschedule suggestion?')) form.submit();
+                                    return;
+                                }
+                                Swal.fire({
+                                    title: 'Decline reschedule suggestion?',
+                                    text: 'The suggestion will be marked as declined.',
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#dc2626',
+                                    cancelButtonColor: '#6b7280',
+                                    confirmButtonText: 'Yes, decline'
+                                }).then(function(result) { if (result.isConfirmed) form.submit(); });
+                            });
+                        });
+                    });
+                </script>
+                @endpush
+            @endif
+        @endcan
 
         {{-- ================= REGULAR PARTICIPANTS CARD ================= --}}
         <!-- <div class="bg-white shadow rounded-lg border overflow-hidden">

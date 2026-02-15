@@ -324,6 +324,7 @@ class EventController extends Controller
             'custodianRequests.custodianMaterial',
             'financeRequest',
             'venueBookings.venueLocation',
+            'rescheduleSuggestions.requestedBy',
         ]);
 
         $venues = Venue::with('locations')->orderBy('name')->get();
@@ -466,6 +467,9 @@ class EventController extends Controller
         ]);
     }
 
+    $oldStartAt = $event->start_at?->toDateTimeString();
+    $oldEndAt = $event->end_at?->toDateTimeString();
+
     try {
         DB::transaction(function () use ($request, $event, $locationIds) {
 
@@ -587,6 +591,13 @@ class EventController extends Controller
                 ]);
             }
         });
+
+        $event->refresh();
+        $datesChanged = ($oldStartAt !== $event->start_at?->toDateTimeString())
+            || ($oldEndAt !== $event->end_at?->toDateTimeString());
+        if ($datesChanged) {
+            $this->eventService->notifyRequesterRescheduled($event, Auth::user());
+        }
 
         $this->inAppNotificationService->notifyUsers(
             users: $this->inAppNotificationService->adminUsers(),

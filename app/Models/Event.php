@@ -111,6 +111,11 @@ class Event extends Model
         return $this->hasMany(EventHistory::class)->orderBy('created_at', 'asc');
     }
 
+    public function rescheduleSuggestions(): HasMany
+    {
+        return $this->hasMany(EventRescheduleSuggestion::class)->orderBy('created_at', 'desc');
+    }
+
     public function custodianRequests(): HasMany
     {
         return $this->hasMany(EventCustodianRequest::class);

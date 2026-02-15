@@ -118,4 +118,17 @@ class EventPolicy
         $validGates = ['venue', 'logistics', 'finance'];
         return $user->isAdmin() && in_array($gate, $validGates) && $event->status === Event::STATUS_PENDING_APPROVAL;
     }
+
+    /**
+     * Whether the user can suggest a reschedule (propose new dates) for the event.
+     */
+    public function suggestReschedule(User $user, Event $event): bool
+    {
+        if (! $event->requested_by || $user->id !== (int) $event->requested_by) {
+            return false;
+        }
+
+        $allowedStatuses = [Event::STATUS_PENDING_APPROVAL, 'pending_approval', 'pending', 'approved'];
+        return in_array($event->status, $allowedStatuses, true);
+    }
 }

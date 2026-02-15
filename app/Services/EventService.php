@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Notifications\EventRescheduledEmailNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -244,6 +245,51 @@ class EventService
 
             return $event;
         });
+    }
+
+    /**
+     * Notify the event requester (in-app + email) when the event has been rescheduled.
+     * Call after an update that changed start_at or end_at. Event should be refreshed.
+     */
+    public function notifyRequesterRescheduled(Event $event, User $actingUser): void
+    {
+        if (! $event->requested_by || $event->requested_by === $actingUser->id) {
+            return;
+        }
+
+        $requester = User::query()->find($event->requested_by);
+        if (! $requester) {
+            return;
+        }
+
+        $start = $event->start_at instanceof Carbon
+            ? $event->start_at->format('F j, Y g:i A')
+            : Carbon::parse($event->start_at)->format('F j, Y g:i A');
+        $end = $event->end_at instanceof Carbon
+            ? $event->end_at->format('g:i A')
+            : Carbon::parse($event->end_at)->format('g:i A');
+        $message = "Your event \"{$event->title}\" has been rescheduled to {$start} – {$end}.";
+        $url = route('events.show', $event);
+        $title = 'Event rescheduled';
+
+        $this->inAppNotificationService->notifyUsers(
+            users: [$requester],
+            title: $title,
+            message: $message,
+            url: $url,
+            category: 'activity',
+            meta: [
+                'event_id' => $event->id,
+                'status' => $event->status,
+            ],
+            excludeUserId: $actingUser->id,
+        );
+
+        $requester->notify(new EventRescheduledEmailNotification(
+            subject: $title,
+            message: $message,
+            url: $url,
+        ));
     }
 
     public function publishEvent(Event $event, User $admin): Event
