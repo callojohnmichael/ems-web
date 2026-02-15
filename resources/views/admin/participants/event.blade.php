@@ -1,4 +1,7 @@
+
 <x-app-layout>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <div class="space-y-6">
         <div class="flex items-center gap-2 text-sm text-gray-600">
             <a href="{{ route('admin.participants.index') }}" class="hover:text-blue-600">Events & Participants</a>
@@ -14,8 +17,8 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('admin.events.participants.create', $event) }}" class="px-3 py-1.5 bg-blue-600 text-white rounded text-sm">+ Add Participant</a>
-                    <a href="{{ route('admin.participants.index') }}" class="px-3 py-1.5 border rounded text-sm">Back</a>
+                    <a href="{{ route('admin.events.participants.create', $event) }}" class="px-3 py-1.5 bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded text-sm">+ Add Participant</a>
+                    <a href="{{ route('admin.participants.index') }}" class="px-3 py-1.5 border border-[#9333ea] text-[#9333ea] hover:bg-[#9333ea]/10 rounded text-sm">Back</a>
                 </div>
             </div>
 
@@ -48,19 +51,38 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
-                        <label class="text-sm font-medium">Select Employee (optional)</label>
-                            <select name="employee_id" id="employee_id" class="mt-1 block w-full border rounded px-2 py-1">
-                                <option value="">-- Manual Entry --</option>
-                                @foreach($employees as $emp)
-                                    <option value="{{ $emp->id }}"
-                                            data-name="{{ $emp->full_name }}"
-                                            data-email="{{ $emp->email ?? '' }}"
-                                            data-phone="{{ $emp->phone ?? '' }}"
-                                            {{ old('employee_id') == $emp->id ? 'selected' : '' }}> 
-                                        {{ $emp->full_name }} {{ $emp->email ? '(' . $emp->email . ')' : '' }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <label for="participant_lookup" class="text-sm font-medium">Search Employee or User</label>
+                        <input type="hidden" name="employee_id" id="employee_id" value="{{ old('employee_id') }}">
+                        <input type="hidden" name="user_id" id="user_id" value="{{ old('user_id') }}">
+                        <select id="participant_lookup" placeholder="Start typing a name or email..." autocomplete="off" class="mt-1 block w-full border rounded">
+                            <option value="">-- Manual Entry --</option>
+                            @foreach($employees as $emp)
+                                @php
+                                    $alreadyOnEvent = in_array($emp->id, $existingEmployeeIds ?? []);
+                                @endphp
+                                <option value="employee:{{ $emp->id }}"
+                                        data-name="{{ $emp->full_name }}"
+                                        data-email="{{ $emp->email ?? '' }}"
+                                        data-phone="{{ $emp->phone_number ?? $emp->mobile_number ?? '' }}"
+                                        @if($alreadyOnEvent) disabled @endif
+                                        @if(old('employee_id') == (string)$emp->id) selected @endif>
+                                    {{ $emp->full_name }}{{ $emp->email ? ' (' . $emp->email . ')' : '' }}{{ $alreadyOnEvent ? ' (Already on the event)' : '' }}
+                                </option>
+                            @endforeach
+                            @foreach($users as $u)
+                                @php
+                                    $alreadyOnEvent = in_array($u->id, $existingUserIds ?? []);
+                                @endphp
+                                <option value="user:{{ $u->id }}"
+                                        data-name="{{ $u->name }}"
+                                        data-email="{{ $u->email }}"
+                                        data-phone=""
+                                        @if($alreadyOnEvent) disabled @endif
+                                        @if(old('user_id') == (string)$u->id) selected @endif>
+                                    {{ $u->name }} ({{ $u->email }}){{ $alreadyOnEvent ? ' (Already on the event)' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div>
@@ -113,7 +135,7 @@
                 </div>
 
                 <div class="flex justify-end">
-                    <button class="px-4 py-2 bg-blue-600 text-white rounded">Add Participant</button>
+                    <button type="submit" class="px-4 py-2 bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded">Add Participant</button>
                 </div>
             </form>
         </div>
@@ -145,7 +167,7 @@
                                         <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold">{{ $member->role ?? 'General Committee' }}</span>
                                     </td>
                                     <td class="px-6 py-4 text-right"> 
-                                        <a href="{{ route('admin.events.participants.edit', [$event, $member]) }}" class="text-purple-600 hover:text-purple-900 text-sm font-medium">Edit</a>
+                                        <a href="{{ route('admin.events.participants.edit', [$event, $member]) }}" class="text-[#9333ea] hover:text-[#7e22ce] text-sm font-medium">Edit</a>
                                     </td>
                                 </tr>
                             @empty
@@ -161,7 +183,7 @@
             <div class="rounded-lg border bg-white shadow-sm overflow-hidden">
                 <div class="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
                     <h3 class="text-lg font-bold text-gray-900">Registered Participants</h3>
-                    <a href="{{ route('admin.events.participants.index', $event) }}" class="text-sm font-medium text-blue-600">View All →</a>
+                    <a href="{{ route('admin.events.participants.index', $event) }}" class="text-sm font-medium text-[#9333ea] hover:text-[#7e22ce]">View All →</a>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -191,7 +213,7 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-right">
-                                        <a href="{{ route('admin.events.participants.show', [$event, $participant]) }}" class="text-blue-600 hover:text-blue-900 text-sm font-medium">View</a>
+                                        <a href="{{ route('admin.events.participants.show', [$event, $participant]) }}" class="text-[#9333ea] hover:text-[#7e22ce] text-sm font-medium">View</a>
                                     </td>
                                 </tr>
                             @empty
@@ -242,45 +264,60 @@
             </div>
         </div>
 
+    <style>
+        .ts-wrapper { border: none !important; box-shadow: none !important; }
+        .ts-wrapper .ts-control { border: 1px solid #d1d5db !important; border-radius: 0.375rem !important; padding: 0.5rem 0.75rem !important; min-height: 2.5rem !important; box-shadow: none !important; }
+        .ts-wrapper.focus .ts-control { border-color: #9333ea !important; box-shadow: 0 0 0 2px #9333ea !important; }
+    </style>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const empSelect = document.getElementById('employee_id');
-            if (!empSelect) return;
+            const lookupEl = document.getElementById('participant_lookup');
+            if (!lookupEl) return;
+
+            const lookupSelect = new TomSelect('#participant_lookup', {
+                create: false,
+                sortField: { field: 'text', direction: 'asc' }
+            });
 
             const nameInput = document.querySelector('input[name="name"]');
             const emailInput = document.querySelector('input[name="email"]');
             const phoneInput = document.querySelector('input[name="phone"]');
+            const employeeIdInput = document.getElementById('employee_id');
+            const userIdInput = document.getElementById('user_id');
 
-            function applyEmpData(opt) {
-                if (!opt) return;
-                const name = opt.dataset.name || '';
-                const email = opt.dataset.email || '';
-                const phone = opt.dataset.phone || '';
-                if (nameInput) nameInput.value = name;
-                if (emailInput) emailInput.value = email;
-                if (phoneInput) phoneInput.value = phone;
-            }
-
-            // On change, fill inputs
-            empSelect.addEventListener('change', function (e) {
-                const val = e.target.value;
-                if (!val) {
-                    // manual entry: clear fields
+            function applyLookup(value) {
+                if (!value) {
+                    employeeIdInput.value = '';
+                    userIdInput.value = '';
                     if (nameInput) nameInput.value = '';
                     if (emailInput) emailInput.value = '';
                     if (phoneInput) phoneInput.value = '';
                     return;
                 }
-                const opt = empSelect.querySelector('option[value="' + CSS.escape(val) + '"]');
-                applyEmpData(opt);
-            });
-
-            // If an employee was pre-selected (old input), apply its data on load
-            const initialVal = empSelect.value;
-            if (initialVal) {
-                const opt = empSelect.querySelector('option[value="' + CSS.escape(initialVal) + '"]');
-                applyEmpData(opt);
+                const opt = document.querySelector('#participant_lookup option[value="' + CSS.escape(value) + '"]');
+                if (opt) {
+                    if (nameInput) nameInput.value = opt.dataset.name || '';
+                    if (emailInput) emailInput.value = opt.dataset.email || '';
+                    if (phoneInput) phoneInput.value = opt.dataset.phone || '';
+                    if (value.startsWith('employee:')) {
+                        employeeIdInput.value = value.slice(9);
+                        userIdInput.value = '';
+                    } else if (value.startsWith('user:')) {
+                        userIdInput.value = value.slice(5);
+                        employeeIdInput.value = '';
+                    }
+                } else {
+                    employeeIdInput.value = '';
+                    userIdInput.value = '';
+                    if (nameInput) nameInput.value = '';
+                    if (emailInput) emailInput.value = '';
+                    if (phoneInput) phoneInput.value = '';
+                }
             }
+
+            lookupSelect.on('change', applyLookup);
+            var initialVal = lookupSelect.getValue();
+            if (initialVal) applyLookup(initialVal);
         });
     </script>
     </div>

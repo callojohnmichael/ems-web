@@ -46,6 +46,9 @@ class ParticipantController extends Controller
             $absentCount = $event->participants->where('status', 'absent')->count();
 
             $employees = Employee::orderBy('last_name')->orderBy('first_name')->get();
+            $users = User::orderBy('name')->get();
+            $existingEmployeeIds = $event->participants()->whereNotNull('employee_id')->pluck('employee_id')->unique()->all();
+            $existingUserIds = $event->participants()->whereNotNull('user_id')->pluck('user_id')->unique()->all();
 
             return view('admin.participants.event', compact(
                 'event',
@@ -54,7 +57,10 @@ class ParticipantController extends Controller
                 'participantCount',
                 'attendedCount',
                 'absentCount',
-                'employees'
+                'employees',
+                'users',
+                'existingEmployeeIds',
+                'existingUserIds'
             ));
         }
 
