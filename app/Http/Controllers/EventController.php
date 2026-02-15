@@ -124,23 +124,31 @@ class EventController extends Controller
             }
         }
 
+        $locationIds = collect($locationIds)
+            ->filter(fn($id) => !empty($id))
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->toArray();
+
         if (empty($locationIds)) {
             return back()->withInput()->withErrors([
                 'venue_location_ids' => 'Please select at least one venue location.',
             ]);
         }
 
-        // Check venue availability
-        $isTaken = Venue::checkVenueAvailability(
-            $request->venue_id,
+        // Check selected venue-location availability
+        $hasLocationConflict = Venue::hasLocationBookingConflict(
+            (int) $request->venue_id,
+            $locationIds,
             $request->start_at,
             $request->end_at,
             null
         );
 
-        if ($isTaken) {
+        if ($hasLocationConflict) {
             return back()->withInput()->withErrors([
-                'venue_id' => 'The venue is already booked for these dates.',
+                'venue_id' => 'One or more selected venue locations are already booked for these dates.',
             ]);
         }
 
@@ -444,16 +452,17 @@ class EventController extends Controller
     }
 
     /* ================= VENUE AVAILABILITY CHECK (EXCLUDE CURRENT EVENT) ================= */
-    $isTaken = Venue::checkVenueAvailability(
-        $request->venue_id,
+    $hasLocationConflict = Venue::hasLocationBookingConflict(
+        (int) $request->venue_id,
+        $locationIds,
         $request->start_at,
         $request->end_at,
         $event->id
     );
 
-    if ($isTaken) {
+    if ($hasLocationConflict) {
         return back()->withInput()->withErrors([
-            'venue_id' => 'The venue is already booked for these dates.',
+            'venue_id' => 'One or more selected venue locations are already booked for these dates.',
         ]);
     }
 
