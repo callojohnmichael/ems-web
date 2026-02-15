@@ -14,6 +14,7 @@ use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SupportController;
 
 use App\Http\Controllers\Admin\AttendanceController;
+use App\Http\Controllers\Admin\CustodianFinanceApprovalController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\ParticipantController;
 use App\Http\Controllers\Admin\ReportController;
@@ -180,6 +181,10 @@ Route::middleware(['auth', 'role:admin'])
         // Admin dashboard
         Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
         Route::get('/approvals', [DashboardController::class, 'adminApprovals'])->name('approvals');
+
+        Route::get('/custodian-finance-approvals', [CustodianFinanceApprovalController::class, 'index'])->name('custodian-finance-approvals.index');
+        Route::post('/custodian-finance-approvals/finance/{event}', [CustodianFinanceApprovalController::class, 'updateFinanceStatus'])->name('custodian-finance-approvals.finance.update');
+        Route::post('/custodian-finance-approvals/custodian/{custodianRequest}', [CustodianFinanceApprovalController::class, 'updateCustodianStatus'])->name('custodian-finance-approvals.custodian.update');
 
         // Admin event bulk upload
         Route::get('/events/bulk-upload-template', [EventController::class, 'downloadCsvTemplate'])

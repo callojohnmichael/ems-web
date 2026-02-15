@@ -116,6 +116,12 @@
                 Documents
             </a>
             @endif
+            @if($show('custodian_finance_approvals'))
+            <a href="{{ route('admin.custodian-finance-approvals.index') }}" data-menu-label="custodian finance approvals" class="menu-search-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('admin.custodian-finance-approvals.*') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Custodian & Finance Approvals
+            </a>
+            @endif
             @if($show('notifications'))
             <a href="{{ route('notifications.index') }}" data-menu-label="notifications alerts inbox" class="menu-search-item flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {{ request()->routeIs('notifications.*') ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <span class="flex items-center gap-3">

@@ -64,6 +64,12 @@ return [
             'description' => 'Documents module',
             'defaults' => ['admin' => true, 'user' => false, 'multimedia_staff' => false],
         ],
+        'custodian_finance_approvals' => [
+            'label' => 'Custodian & Finance Approvals',
+            'group' => 'Admin',
+            'description' => 'Approve or reject custodian and finance requests',
+            'defaults' => ['admin' => true, 'user' => false, 'multimedia_staff' => false],
+        ],
         'notifications' => [
             'label' => 'Notifications',
             'group' => 'Admin',

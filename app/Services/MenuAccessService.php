@@ -173,6 +173,7 @@ class MenuAccessService
 
             'venues',
             'documents',
+            'custodian_finance_approvals',
             'notifications',
             'support' => $user->hasRole('admin'),
 
