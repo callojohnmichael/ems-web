@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\Post;
 use App\Models\SupportTicket;
 use App\Models\Venue;
+use App\Services\ReportInsightsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    public function __construct(
+        private ReportInsightsService $insights
+    ) {}
+
     public function index(Request $request): View
     {
         [$startDate, $endDate] = $this->resolveDateRange($request);
@@ -37,15 +42,20 @@ class ReportController extends Controller
             ['Metric' => 'Venues Used', 'Value' => Venue::whereHas('events', fn ($q) => $this->applyEventDateRange($q, $startDate, $endDate))->count()],
         ])->toArray();
 
+        $totalEvents = (clone $eventsQuery)->count();
+        $participantsCount = Participant::whereHas('event', fn ($q) => $this->applyEventDateRange($q, $startDate, $endDate))->count();
+        $venueRow = collect($rows)->firstWhere('Metric', 'Venues Used');
+        $venuesUsed = (int) ($venueRow['Value'] ?? 0);
+
         return $this->reportView(
             request: $request,
             section: 'overview',
             title: 'Executive Overview',
             cards: [
-                'Total Events' => (clone $eventsQuery)->count(),
+                'Total Events' => $totalEvents,
                 'Published' => (int) ($statusCounts['published'] ?? 0),
                 'Pending' => (int) ($statusCounts['pending_approvals'] ?? 0),
-                'Participants' => Participant::whereHas('event', fn ($q) => $this->applyEventDateRange($q, $startDate, $endDate))->count(),
+                'Participants' => $participantsCount,
             ],
             columns: ['Metric', 'Value'],
             rows: $rows,
@@ -67,7 +77,14 @@ class ReportController extends Controller
                     data: array_map(fn ($row) => (float) $row['Value'], $rows),
                     datasetLabel: 'Total'
                 ),
-            ]
+            ],
+            interpretations: $this->insights->overview([
+                'total_events' => $totalEvents,
+                'pending' => (int) ($statusCounts['pending_approvals'] ?? 0),
+                'published' => (int) ($statusCounts['published'] ?? 0),
+                'participants' => $participantsCount,
+                'venues_used' => $venuesUsed,
+            ])
         );
     }
 
@@ -87,16 +104,18 @@ class ReportController extends Controller
             ])
             ->toArray();
 
+        $cards = [
+            'Total Events' => (clone $eventsQuery)->count(),
+            'Pending Approvals' => (clone $eventsQuery)->where('status', Event::STATUS_PENDING_APPROVAL)->count(),
+            'Approved' => (clone $eventsQuery)->where('status', Event::STATUS_APPROVED)->count(),
+            'Published' => (clone $eventsQuery)->where('status', Event::STATUS_PUBLISHED)->count(),
+        ];
+
         return $this->reportView(
             request: $request,
             section: 'pipeline',
             title: 'Event Pipeline',
-            cards: [
-                'Total Events' => (clone $eventsQuery)->count(),
-                'Pending Approvals' => (clone $eventsQuery)->where('status', Event::STATUS_PENDING_APPROVAL)->count(),
-                'Approved' => (clone $eventsQuery)->where('status', Event::STATUS_APPROVED)->count(),
-                'Published' => (clone $eventsQuery)->where('status', Event::STATUS_PUBLISHED)->count(),
-            ],
+            cards: $cards,
             columns: ['Status', 'Total'],
             rows: $statusRows,
             charts: [
@@ -108,7 +127,14 @@ class ReportController extends Controller
                     data: array_map(fn ($row) => (int) $row['Total'], $statusRows),
                     datasetLabel: 'Events'
                 ),
-            ]
+            ],
+            interpretations: $this->insights->pipeline([
+                'total_events' => $cards['Total Events'],
+                'pending' => $cards['Pending Approvals'],
+                'approved' => $cards['Approved'],
+                'published' => $cards['Published'],
+                'status_rows' => $statusRows,
+            ])
         );
     }
 
@@ -130,16 +156,18 @@ class ReportController extends Controller
             ])
             ->toArray();
 
+        $cards = [
+            'Total Participants' => (clone $participantsQuery)->count(),
+            'Confirmed' => (clone $participantsQuery)->where('status', 'confirmed')->count(),
+            'Attended' => (clone $participantsQuery)->where('status', 'attended')->count(),
+            'Absent' => (clone $participantsQuery)->where('status', 'absent')->count(),
+        ];
+
         return $this->reportView(
             request: $request,
             section: 'participants',
             title: 'Participants & Attendance',
-            cards: [
-                'Total Participants' => (clone $participantsQuery)->count(),
-                'Confirmed' => (clone $participantsQuery)->where('status', 'confirmed')->count(),
-                'Attended' => (clone $participantsQuery)->where('status', 'attended')->count(),
-                'Absent' => (clone $participantsQuery)->where('status', 'absent')->count(),
-            ],
+            cards: $cards,
             columns: ['Status', 'Total'],
             rows: $statusRows,
             charts: [
@@ -152,7 +180,13 @@ class ReportController extends Controller
                     datasetLabel: 'Participants',
                     fullWidth: true
                 ),
-            ]
+            ],
+            interpretations: $this->insights->participants([
+                'total' => $cards['Total Participants'],
+                'confirmed' => $cards['Confirmed'],
+                'attended' => $cards['Attended'],
+                'absent' => $cards['Absent'],
+            ])
         );
     }
 
@@ -175,14 +209,20 @@ class ReportController extends Controller
         $bookingsInRange = DB::table('venue_bookings')
             ->whereBetween('start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]);
 
+        $venuesUsed = Venue::whereHas('events', fn ($q) => $this->applyEventDateRange($q, $startDate, $endDate))->count();
+        $totalBookings = (clone $bookingsInRange)->count();
+        $firstVenue = collect($venueRows)->first();
+        $topVenueEvents = (int) ($firstVenue['Events'] ?? 0);
+        $topVenueName = $firstVenue['Venue'] ?? null;
+
         return $this->reportView(
             request: $request,
             section: 'venues',
             title: 'Venue Utilization',
             cards: [
-                'Venues Used' => Venue::whereHas('events', fn ($q) => $this->applyEventDateRange($q, $startDate, $endDate))->count(),
-                'Total Bookings' => (clone $bookingsInRange)->count(),
-                'Top Venue Events' => (int) (collect($venueRows)->first()['Events'] ?? 0),
+                'Venues Used' => $venuesUsed,
+                'Total Bookings' => $totalBookings,
+                'Top Venue Events' => $topVenueEvents,
                 'Total Venues' => Venue::count(),
             ],
             columns: ['Venue', 'Events', 'Capacity'],
@@ -197,7 +237,14 @@ class ReportController extends Controller
                     datasetLabel: 'Events',
                     horizontal: true
                 ),
-            ]
+            ],
+            interpretations: $this->insights->venues([
+                'venues_used' => $venuesUsed,
+                'total_bookings' => $totalBookings,
+                'top_venue_events' => $topVenueEvents,
+                'top_venue_name' => $topVenueName,
+                'venue_rows' => $venueRows,
+            ])
         );
     }
 
@@ -243,6 +290,14 @@ class ReportController extends Controller
                 ->sum('eli.subtotal');
         }
 
+        $openRequests = $financeTableExists
+            ? DB::table('event_finance_requests as efr')
+                ->join('events', 'events.id', '=', 'efr.event_id')
+                ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                ->where('efr.status', 'pending')
+                ->count()
+            : 0;
+
         return $this->reportView(
             request: $request,
             section: 'finance',
@@ -251,13 +306,7 @@ class ReportController extends Controller
                 'Total Requested Budget' => number_format($financeTotal, 2),
                 'Approved Budget' => number_format($financeApproved, 2),
                 'Logistics Cost' => number_format($logisticsTotal, 2),
-                'Open Requests' => $financeTableExists
-                    ? DB::table('event_finance_requests as efr')
-                        ->join('events', 'events.id', '=', 'efr.event_id')
-                        ->whereBetween('events.start_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
-                        ->where('efr.status', 'pending')
-                        ->count()
-                    : 0,
+                'Open Requests' => $openRequests,
             ],
             columns: ['Status', 'Requests', 'Total Amount'],
             rows: $financeRows,
@@ -278,7 +327,13 @@ class ReportController extends Controller
                     data: [$financeTotal, $financeApproved, $logisticsTotal],
                     datasetLabel: 'Amount'
                 ),
-            ]
+            ],
+            interpretations: $this->insights->finance([
+                'total_requested' => $financeTotal,
+                'approved' => $financeApproved,
+                'logistics' => $logisticsTotal,
+                'open_requests' => $openRequests,
+            ])
         );
     }
 
@@ -338,6 +393,10 @@ class ReportController extends Controller
                 ->avg('event_ratings.rating');
         }
 
+        $firstPostRow = collect($postRows)->first();
+        $topEventPosts = (int) ($firstPostRow['Posts'] ?? 0);
+        $topEventName = $firstPostRow['Event'] ?? null;
+
         return $this->reportView(
             request: $request,
             section: 'engagement',
@@ -345,7 +404,7 @@ class ReportController extends Controller
             cards: [
                 'Posts' => $postsCount,
                 'Comments' => $commentsCount,
-                'Top Event Posts' => (int) (collect($postRows)->first()['Posts'] ?? 0),
+                'Top Event Posts' => $topEventPosts,
                 'Average Rating' => $avgRating !== null ? number_format((float) $avgRating, 2) : 'N/A',
             ],
             columns: ['Event', 'Posts'],
@@ -360,7 +419,14 @@ class ReportController extends Controller
                     datasetLabel: 'Posts',
                     horizontal: true
                 ),
-            ]
+            ],
+            interpretations: $this->insights->engagement([
+                'posts' => $postsCount,
+                'comments' => $commentsCount,
+                'top_event_posts' => $topEventPosts,
+                'avg_rating' => $avgRating !== null ? (float) $avgRating : null,
+                'top_event_name' => $topEventName,
+            ])
         );
     }
 
@@ -389,14 +455,18 @@ class ReportController extends Controller
                 ->count()
             : 0;
 
+        $totalTickets = (clone $ticketsQuery)->count();
+        $openTickets = (clone $ticketsQuery)->where('status', 'open')->count();
+        $closedTickets = (clone $ticketsQuery)->where('status', 'closed')->count();
+
         return $this->reportView(
             request: $request,
             section: 'support',
             title: 'Support & Operations',
             cards: [
-                'Total Tickets' => (clone $ticketsQuery)->count(),
-                'Open Tickets' => (clone $ticketsQuery)->where('status', 'open')->count(),
-                'Closed Tickets' => (clone $ticketsQuery)->where('status', 'closed')->count(),
+                'Total Tickets' => $totalTickets,
+                'Open Tickets' => $openTickets,
+                'Closed Tickets' => $closedTickets,
                 'Messages' => $messageCount,
             ],
             columns: ['Status', 'Tickets'],
@@ -410,7 +480,13 @@ class ReportController extends Controller
                     data: array_map(fn ($row) => (int) $row['Tickets'], $statusRows),
                     datasetLabel: 'Tickets'
                 ),
-            ]
+            ],
+            interpretations: $this->insights->support([
+                'total_tickets' => $totalTickets,
+                'open' => $openTickets,
+                'closed' => $closedTickets,
+                'messages' => $messageCount,
+            ])
         );
     }
 
@@ -523,7 +599,8 @@ class ReportController extends Controller
         array $cards,
         array $columns,
         array $rows,
-        array $charts = []
+        array $charts = [],
+        array $interpretations = []
     ): View {
         [$startDate, $endDate] = $this->resolveDateRange($request);
 
@@ -534,6 +611,7 @@ class ReportController extends Controller
             'columns' => $columns,
             'rows' => $rows,
             'charts' => $charts,
+            'interpretations' => $interpretations,
             'startDate' => $startDate->toDateString(),
             'endDate' => $endDate->toDateString(),
         ]);
