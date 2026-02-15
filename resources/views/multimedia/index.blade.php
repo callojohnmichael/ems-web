@@ -138,7 +138,7 @@
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
-                            {{ $post->reactions->count() }}
+                            <span id="engagement-reactions-count-{{ $post->id }}">{{ $post->reactions->count() }}</span>
                         </span>
                         <span class="flex items-center">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,27 +150,21 @@
 
                     <div class="flex items-center gap-2">
                         @can('react multimedia post')
-                            @if($userReaction)
-                                <form method="POST" action="{{ route('multimedia.posts.reactions.destroy', $post) }}" class="inline-flex items-center">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="inline-flex items-center justify-center p-0 text-red-500 hover:text-red-600 transition" title="Remove reaction">
+                            <div class="js-reaction-container inline-flex items-center" data-post-id="{{ $post->id }}" data-has-reaction="{{ $userReaction ? '1' : '0' }}" data-store-url="{{ route('multimedia.posts.reactions.store', $post) }}" data-destroy-url="{{ route('multimedia.posts.reactions.destroy', $post) }}" data-csrf="{{ csrf_token() }}">
+                                @if($userReaction)
+                                    <button type="button" class="js-reaction-remove inline-flex items-center justify-center p-0 text-red-500 hover:text-red-600 transition" title="Remove reaction">
                                         <svg class="w-5 h-5 shrink-0" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                         </svg>
                                     </button>
-                                </form>
-                            @else
-                                <form method="POST" action="{{ route('multimedia.posts.reactions.store', $post) }}" class="inline-flex items-center">
-                                    @csrf
-                                    <input type="hidden" name="type" value="like">
-                                    <button type="submit" class="inline-flex items-center justify-center p-0 text-gray-400 hover:text-red-500 transition" title="Like">
+                                @else
+                                    <button type="button" class="js-reaction-add inline-flex items-center justify-center p-0 text-gray-400 hover:text-red-500 transition" title="Like">
                                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                         </svg>
                                     </button>
-                                </form>
-                            @endif
+                                @endif
+                            </div>
                         @endcan
                         <button type="button" onclick="toggleComments({{ $post->id }})" class="inline-flex items-center justify-center p-0 text-gray-400 hover:text-blue-500 transition" title="Comments">
                             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
