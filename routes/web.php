@@ -181,14 +181,14 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
         Route::get('/approvals', [DashboardController::class, 'adminApprovals'])->name('approvals');
 
-        // Admin Events
-        Route::resource('events', EventController::class);
-
         // Admin event bulk upload
         Route::get('/events/bulk-upload-template', [EventController::class, 'downloadCsvTemplate'])
             ->name('events.bulk-upload-template');
         Route::post('/events/bulk-upload', [EventController::class, 'bulkUpload'])
             ->name('events.bulk-upload');
+
+        // Admin Events
+        Route::resource('events', EventController::class);
 
         // Admin event actions
         Route::post('/events/{event}/approve', [EventController::class, 'approve'])->name('events.approve');
