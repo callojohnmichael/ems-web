@@ -21,6 +21,11 @@
         $oldEnd = old('end_at')
             ? \Carbon\Carbon::parse(old('end_at'))->format('Y-m-d\TH:i')
             : '';
+
+        $initialCreateTab = (session('bulk_upload_errors')
+            || (session('success') && !old('title') && !old('venue_id') && !old('start_at')))
+            ? 'bulk'
+            : 'form';
     @endphp
 
     <div class="py-10"
@@ -44,12 +49,31 @@
 
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
 
-            {{-- Bulk Upload Section (Admin Only) --}}
             @if(auth()->user()->isAdmin())
-                <div class="mb-8 bg-white shadow-sm rounded-lg">
+                <div class="mb-6 bg-white shadow-sm rounded-lg border border-gray-200 p-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button"
+                                @click="active_create_tab = 'form'"
+                                class="px-4 py-2 rounded-md text-sm font-semibold transition"
+                                :class="active_create_tab === 'form' ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
+                            Event Form
+                        </button>
+                        <button type="button"
+                                @click="active_create_tab = 'bulk'"
+                                class="px-4 py-2 rounded-md text-sm font-semibold transition"
+                                :class="active_create_tab === 'bulk' ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
+                            Bulk Import
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Bulk Upload Section (Admin Only) --}}
+                <div class="mb-8 bg-white shadow-sm rounded-lg"
+                     x-show="active_create_tab === 'bulk'"
+                     x-cloak>
                     <div class="px-6 py-4 border-b border-gray-200">
                         <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                             Bulk Upload Events
@@ -96,7 +120,7 @@
                                 <h4 class="mt-2 text-lg font-medium text-gray-900">Download CSV Template</h4>
                                 <p class="mt-1 text-sm text-gray-500">Get the pre-formatted template with sample data</p>
                                 <a href="{{ route('admin.events.bulk-upload-template') }}" 
-                                   class="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:border-indigo-900 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                   class="mt-4 inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 active:bg-purple-800 focus:outline-none focus:border-purple-900 focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
@@ -154,18 +178,9 @@
                         </div>
                     </div>
                 </div>
-                
-                {{-- Divider --}}
-                <div class="relative py-6">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-gray-50 text-gray-500">OR CREATE SINGLE EVENT</span>
-                    </div>
-                </div>
             @endif
 
+            <div @if(auth()->user()->isAdmin()) x-show="active_create_tab === 'form'" x-cloak @endif>
             {{-- Validation Errors --}}
             @if ($errors->any())
                 <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm">
@@ -279,7 +294,7 @@
                                            x-ref="titleInput"
                                            name="title"
                                            value="{{ old('title') }}"
-                                           class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 pr-10"
+                                           class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
                                            placeholder="Start typing or choose from suggestions..."
                                            @focus="showSuggestions = true"
                                            @blur="setTimeout(() => showSuggestions = false, 200)"
@@ -307,7 +322,7 @@
                                                 <button type="button"
                                                         @click="selectSuggestion(suggestion)"
                                                         @mousedown.prevent
-                                                        class="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none border-b border-gray-100 last:border-b-0">
+                                                        class="w-full px-4 py-2 text-left text-sm hover:bg-purple-50 focus:bg-purple-50 focus:outline-none border-b border-gray-100 last:border-b-0">
                                                     <div class="flex items-center justify-between">
                                                         <span x-text="suggestion"></span>
                                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -339,7 +354,7 @@
                                 <select name="venue_id"
                                         x-model="selected_venue_id"
                                         @change="handleVenueChange()"
-                                        class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                         required>
                                     <option value="">-- Select Venue --</option>
                                     @foreach($venues as $venue)
@@ -352,7 +367,7 @@
                                 {{-- Venue capacity --}}
                                 <p x-show="venue_capacity > 0" class="mt-2 text-xs text-gray-600">
                                     📍 Venue Capacity:
-                                    <span class="font-bold text-indigo-600" x-text="venue_capacity"></span>
+                                    <span class="font-bold text-purple-600" x-text="venue_capacity"></span>
                                     persons
                                 </p>
 
@@ -398,7 +413,7 @@
                                        x-model="start_at"
                                        @change="handleDateChange()"
                                        value="{{ $oldStart }}"
-                                       class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                       class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                        required>
                             </div>
 
@@ -412,7 +427,7 @@
                                        x-model="end_at"
                                        @change="handleDateChange()"
                                        value="{{ $oldEnd }}"
-                                       class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                       class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                        required>
 
                                 {{-- Client-side warning (prevents confusion) --}}
@@ -432,7 +447,7 @@
                                         <label class="flex items-start p-4 border rounded-lg cursor-pointer transition"
                                                :class="location.is_booked
                                                     ? 'border-red-200 bg-red-50/40 cursor-not-allowed'
-                                                    : 'border-gray-200 hover:bg-indigo-50'">
+                                                    : 'border-gray-200 hover:bg-purple-50'">
 
                                             <input type="checkbox"
                                                    name="venue_location_ids[]"
@@ -470,8 +485,8 @@
                                 </p>
 
                                 <div x-show="selected_venue_location_ids.length > 0"
-                                     class="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                                    <p class="text-sm font-semibold text-indigo-900">
+                                     class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                                    <p class="text-sm font-semibold text-purple-900">
                                         Total Selected Locations Capacity:
                                         <span class="font-black" x-text="location_total_capacity"></span>
                                         persons
@@ -482,12 +497,13 @@
                             {{-- Description --}}
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Description
+                                    Description <span class="text-red-500">*</span>
                                 </label>
                                 <textarea name="description"
                                           rows="4"
-                                          class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                                          placeholder="Event details...">{{ old('description') }}</textarea>
+                                          class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                          placeholder="Event details..."
+                                          required>{{ old('description') }}</textarea>
                             </div>
 
                             {{-- Participants --}}
@@ -505,7 +521,7 @@
                                        x-model.number="number_of_participants"
                                        @input="validateParticipants()"
                                        min="0"
-                                       class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                       class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                        placeholder="Expected number of participants">
 
                                 <p x-show="participants_error"
@@ -527,7 +543,7 @@
                             </div>
 
                             <button type="button" @click="addRow()"
-                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold uppercase hover:bg-indigo-700 transition">
+                                    class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg text-xs font-semibold uppercase hover:bg-purple-700 transition">
                                 + Add Item
                             </button>
                         </div>
@@ -543,7 +559,7 @@
                                             :name="`logistics_items[${index}][resource_id]`"
                                             x-model="row.resource_id"
                                             @change="updateResourceName(index)"
-                                            class="w-full rounded-lg border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 logistics-select">
+                                            class="w-full rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500 logistics-select">
 
                                             <option value="">-- Select Resource --</option>
 
@@ -570,7 +586,7 @@
                                                :name="`logistics_items[${index}][resource_name]`"
                                                x-model="row.resource_name"
                                                placeholder="e.g., Sound System"
-                                               class="w-full rounded-lg border-gray-300 focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="w-full rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500">
                                     </div>
 
                                     <div class="col-span-6 md:col-span-2">
@@ -580,7 +596,7 @@
                                                :name="`logistics_items[${index}][quantity]`"
                                                x-model.number="row.quantity"
                                                min="1"
-                                               class="w-full rounded-lg border-gray-300 focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="w-full rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500">
                                     </div>
 
                                     <div class="col-span-6 md:col-span-2">
@@ -590,7 +606,7 @@
                                                step="0.01"
                                                :name="`logistics_items[${index}][unit_price]`"
                                                x-model.number="row.unit_price"
-                                               class="w-full rounded-lg border-gray-300 focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="w-full rounded-lg border-gray-300 focus:ring-purple-500 focus:border-purple-500">
                                     </div>
 
                                     <div class="col-span-10 md:col-span-2 text-right py-2">
@@ -615,11 +631,11 @@
                             </template>
                         </div>
 
-                        <div class="mt-6 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex justify-between items-center">
-                            <span class="text-indigo-900 font-bold uppercase tracking-wider text-sm">
+                        <div class="mt-6 p-4 bg-purple-50 border border-purple-100 rounded-lg flex justify-between items-center">
+                            <span class="text-purple-900 font-bold uppercase tracking-wider text-sm">
                                 Estimated Total Budget:
                             </span>
-                            <span class="text-2xl font-black text-indigo-600">
+                            <span class="text-2xl font-black text-purple-600">
                                 ₱<span x-text="formatNumber(calculateTotal())"></span>
                             </span>
                         </div>
@@ -631,7 +647,7 @@
                             <h3 class="text-lg font-bold text-gray-900">Custodian Equipment Request</h3>
 
                             <button type="button" @click="addRow()"
-                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold uppercase hover:bg-indigo-700 transition">
+                                    class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg text-xs font-semibold uppercase hover:bg-purple-700 transition">
                                 + Add Equipment
                             </button>
                         </div>
@@ -641,7 +657,7 @@
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-bold text-gray-600 mb-1">Equipment</label>
 
-                                    <select class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                    <select class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                             :name="`custodian_items[${index}][material_id]`"
                                             x-model="row.material_id">
                                         <option value="">-- Select Equipment --</option>
@@ -656,7 +672,7 @@
 
                                     <input type="number"
                                            min="1"
-                                           class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                           class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                            :name="`custodian_items[${index}][quantity]`"
                                            x-model.number="row.quantity">
                                 </div>
@@ -677,7 +693,7 @@
                             <h3 class="text-lg font-bold text-gray-900">Committee</h3>
 
                             <button type="button" @click="addRow()"
-                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold uppercase hover:bg-indigo-700 transition">
+                                    class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg text-xs font-semibold uppercase hover:bg-purple-700 transition">
                                 + Add Member
                             </button>
                         </div>
@@ -687,7 +703,7 @@
                                 <div>
                                     <label class="block text-xs font-bold text-gray-600 mb-1">Employee</label>
 
-                                    <select class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                    <select class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                             :name="`committee[${index}][employee_id]`"
                                             x-model="row.employee_id">
                                         <option value="">-- Select --</option>
@@ -703,7 +719,7 @@
                                     <label class="block text-xs font-bold text-gray-600 mb-1">Role</label>
 
                                     <input type="text"
-                                           class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                           class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                            :name="`committee[${index}][role]`"
                                            x-model="row.role"
                                            placeholder="e.g. Chairperson">
@@ -731,12 +747,13 @@
                     <button type="submit"
                             :disabled="submit_disabled"
                             x-bind:class="submit_disabled ? 'opacity-60 cursor-not-allowed' : ''"
-                            class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition shadow-sm">
+                            class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 transition shadow-sm">
                         Submit Request
                     </button>
                 </div>
 
             </form>
+            </div>
 
         </div>
     </div>
@@ -746,6 +763,7 @@
 
             Alpine.data('eventForm', (venuesData) => ({
                 venues: (venuesData && venuesData.venues) ? venuesData.venues : [],
+                active_create_tab: @js($initialCreateTab),
 
                 selected_venue_id: "{{ old('venue_id') }}",
                 selectedVenue: null,
@@ -1053,17 +1071,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Drag and drop functionality
         uploadLabel.addEventListener('dragover', function(e) {
             e.preventDefault();
-            this.classList.add('border-indigo-500', 'bg-indigo-50');
+            this.classList.add('border-purple-500', 'bg-purple-50');
         });
         
         uploadLabel.addEventListener('dragleave', function(e) {
             e.preventDefault();
-            this.classList.remove('border-indigo-500', 'bg-indigo-50');
+            this.classList.remove('border-purple-500', 'bg-purple-50');
         });
         
         uploadLabel.addEventListener('drop', function(e) {
             e.preventDefault();
-            this.classList.remove('border-indigo-500', 'bg-indigo-50');
+            this.classList.remove('border-purple-500', 'bg-purple-50');
             
             const files = e.dataTransfer.files;
             if (files.length > 0) {
