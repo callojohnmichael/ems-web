@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
 
     // Calendar
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('/calendar/export', [CalendarController::class, 'export'])->name('calendar.export');
 
     // Events (normal users)
     Route::resource('events', EventController::class);

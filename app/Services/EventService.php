@@ -428,6 +428,56 @@ class EventService
     }
 
     /**
+     * Calendar events for a single venue (role-based visibility).
+     */
+    public function getEventsForCalendarByVenue(int $venueId, User $user): array
+    {
+        $events = Event::query()
+            ->select('id', 'title', 'start_at', 'end_at', 'status')
+            ->where('venue_id', $venueId)
+            ->orderBy('start_at');
+
+        if ($user->isAdmin()) {
+            // no extra filter
+        } elseif ($user->isUser()) {
+            $events->where(function ($q) use ($user) {
+                $q->where('requested_by', $user->id)->orWhere('status', 'published');
+            });
+        } else {
+            $events->where('status', 'published');
+        }
+
+        return $this->formatEventsForCalendar($events->get())->all();
+    }
+
+    /**
+     * Events for calendar export (role-based visibility, optional venue filter).
+     * Returns Eloquent models with venue relationship for CSV/Excel.
+     */
+    public function getEventsForCalendarExport(User $user, ?int $venueId = null)
+    {
+        $query = Event::query()
+            ->with('venue')
+            ->orderBy('start_at');
+
+        if ($venueId !== null) {
+            $query->where('venue_id', $venueId);
+        }
+
+        if ($user->isAdmin()) {
+            // no status filter
+        } elseif ($user->isUser()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('requested_by', $user->id)->orWhere('status', 'published');
+            });
+        } else {
+            $query->where('status', 'published');
+        }
+
+        return $query->get();
+    }
+
+    /**
      * Shared formatter for FullCalendar
      */
     private function formatEventsForCalendar($events)

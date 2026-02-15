@@ -64,6 +64,10 @@
 
                 {{-- RIGHT ACTIONS --}}
                 <div class="flex flex-wrap gap-2 lg:mt-0">
+                    <a href="{{ route('calendar.index') }}#venue-{{ $venue->id }}"
+                       class="btn-secondary text-indigo-700">
+                        View calendar
+                    </a>
                     <a href="{{ route('admin.venues.show', $venue) }}"
                        class="btn-secondary text-gray-700">
                         View Events
