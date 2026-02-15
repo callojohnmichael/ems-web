@@ -3,7 +3,8 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
 
         <title>{{ config('app.name', 'Event Manager') }}</title>
 
@@ -18,7 +19,7 @@
             <div class="pointer-events-none absolute -bottom-40 left-10 h-[28rem] w-[28rem] rounded-full bg-[#9b6df3]/20 blur-3xl"></div>
 
             <div class="relative flex min-h-screen flex-col items-center px-6 pb-12 pt-12 sm:pt-16">
-                <div class="flex flex-col items-center gap-3">
+                <a href="{{ route('dashboard') }}" class="flex flex-col items-center gap-3">
                     <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#5b6cf7] to-[#b073f2] shadow-lg shadow-[#7a74f5]/30">
                         <svg class="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                             <path d="M12 3L2.5 7.5L12 12L21.5 7.5L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
@@ -28,7 +29,7 @@
                     </div>
                     <h1 class="text-3xl font-semibold tracking-tight text-slate-900">{{ config('app.name', 'Event Manager') }}</h1>
                     <p class="text-sm text-slate-500">School Event Management System</p>
-                </div>
+                </a>
 
                 <div class="mt-10 w-full max-w-md">
                     <div class="rounded-2xl border border-white/60 bg-white/80 p-8 shadow-xl shadow-slate-200/70 backdrop-blur">

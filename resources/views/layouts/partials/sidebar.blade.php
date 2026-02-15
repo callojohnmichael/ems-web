@@ -5,7 +5,7 @@
 
 <aside class="fixed left-0 top-0 z-40 h-screen w-64 border-r border-gray-200 bg-white shadow-sm" x-data="{ collapsed: false }">
     <div class="flex h-full flex-col">
-        <div class="flex h-16 items-center gap-2 border-b border-gray-100 px-4">
+        <a href="{{ route('dashboard') }}" class="flex h-16 items-center gap-2 border-b border-gray-100 px-4 hover:bg-gray-50">
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-purple-700 text-white">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
             </div>
@@ -13,7 +13,7 @@
                 <p class="truncate font-semibold text-gray-900">Event Manager</p>
                 <p class="truncate text-xs text-gray-500">School Events</p>
             </div>
-        </div>
+        </a>
 
         <nav class="flex-1 space-y-0.5 overflow-y-auto p-3" data-menu-search-nav>
             <div class="mb-2">
