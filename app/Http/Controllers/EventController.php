@@ -186,14 +186,16 @@ class EventController extends Controller
                             $resourceId = null;
                         }
 
-                        if ((!empty($resourceId) || !empty($name)) && $quantity > 0) {
+                        $description = $this->resolveLogisticsDescription($name, $resourceId);
+
+                        if ((!empty($resourceId) || !empty($name)) && $quantity > 0 && !empty($description)) {
 
                             $subtotal = $quantity * $unitPrice;
                             $logisticsTotal += $subtotal;
 
                             $event->logisticsItems()->create([
                                 'resource_id' => $resourceId,
-                                'description' => $name,
+                                'description' => $description,
                                 'employee_id' => $item['employee_id'] ?? null,
                                 'quantity' => $quantity,
                                 'unit_price' => $unitPrice,
@@ -503,14 +505,16 @@ class EventController extends Controller
                         $resourceId = null;
                     }
 
-                    if ((!empty($resourceId) || !empty($name)) && $quantity > 0) {
+                    $description = $this->resolveLogisticsDescription($name, $resourceId);
+
+                    if ((!empty($resourceId) || !empty($name)) && $quantity > 0 && !empty($description)) {
 
                         $subtotal = $quantity * $unitPrice;
                         $logisticsTotal += $subtotal;
 
                         $event->logisticsItems()->create([
                             'resource_id' => $resourceId,
-                            'description' => $name,
+                            'description' => $description,
                             'employee_id' => $item['employee_id'] ?? null,
                             'quantity' => $quantity,
                             'unit_price' => $unitPrice,
@@ -870,5 +874,25 @@ class EventController extends Controller
         return redirect()
             ->back()
             ->with('success', $message);
+    }
+
+    private function resolveLogisticsDescription(mixed $resourceName, mixed $resourceId): ?string
+    {
+        $description = trim((string) ($resourceName ?? ''));
+        if ($description !== '') {
+            return $description;
+        }
+
+        if (empty($resourceId) || $resourceId === 'custom') {
+            return null;
+        }
+
+        $resource = Resource::query()->find($resourceId);
+        if (!$resource) {
+            return null;
+        }
+
+        $resourceLabel = trim((string) ($resource->name ?? ''));
+        return $resourceLabel !== '' ? $resourceLabel : null;
     }
 }
