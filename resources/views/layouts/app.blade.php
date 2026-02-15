@@ -181,7 +181,7 @@
                             .replaceAll('<', '&lt;')
                             .replaceAll('>', '&gt;')
                             .replaceAll('\"', '&quot;')
-                            .replaceAll(\"'\", '&#039;');
+                            .replaceAll('\u0027', '&#039;');
 
                         dropdownList.innerHTML = items.map((item) => {
                             const title = escapeHtml(item.title ?? 'Notification');

@@ -129,6 +129,9 @@
                 @endif
 
                 {{-- ENGAGEMENT --}}
+                @php
+                    $userReaction = $post->reactions->firstWhere('user_id', auth()->id());
+                @endphp
                 <div class="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div class="flex items-center gap-4 text-sm text-gray-500">
                         <span class="flex items-center">
@@ -141,26 +144,94 @@
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
-                            {{ $post->comments->count() }}
+                            <span id="engagement-comments-count-{{ $post->id }}">{{ $post->comments->count() }}</span>
                         </span>
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <button class="text-gray-400 hover:text-red-500 transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                        </button>
-                        <button class="text-gray-400 hover:text-blue-500 transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        @can('react multimedia post')
+                            @if($userReaction)
+                                <form method="POST" action="{{ route('multimedia.posts.reactions.destroy', $post) }}" class="inline-flex items-center">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="inline-flex items-center justify-center p-0 text-red-500 hover:text-red-600 transition" title="Remove reaction">
+                                        <svg class="w-5 h-5 shrink-0" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('multimedia.posts.reactions.store', $post) }}" class="inline-flex items-center">
+                                    @csrf
+                                    <input type="hidden" name="type" value="like">
+                                    <button type="submit" class="inline-flex items-center justify-center p-0 text-gray-400 hover:text-red-500 transition" title="Like">
+                                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            @endif
+                        @endcan
+                        <button type="button" onclick="toggleComments({{ $post->id }})" class="inline-flex items-center justify-center p-0 text-gray-400 hover:text-blue-500 transition" title="Comments">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
                         </button>
-                        <button class="text-gray-400 hover:text-green-500 transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9.001 9.001 0 01-7.432 0m9.032-4.026A9.001 9.001 0 0112 3c-4.474 0-8.268 3.12-9.032 7.326m0 0A9.001 9.001 0 0012 21c4.474 0 8.268-3.12 9.032-7.326" />
-                            </svg>
-                        </button>
+                    </div>
+                </div>
+
+                {{-- COMMENTS SECTION --}}
+                <div id="comments-{{ $post->id }}" class="hidden mt-3 pt-3 border-t border-gray-100 space-y-3">
+                    @can('comment multimedia post')
+                        <form method="POST" action="{{ route('multimedia.posts.comments.store', $post) }}" class="mb-3 js-comment-form" data-post-id="{{ $post->id }}">
+                            @csrf
+                            <div class="flex gap-2">
+                                <input type="text" name="content" required maxlength="1000" placeholder="Write a comment..." class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 js-comment-input">
+                                <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">Post</button>
+                            </div>
+                            @error('content')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                        </form>
+                    @endcan
+                    @php
+                        $commentLimit = 10;
+                        $commentsSorted = $post->comments->sortByDesc('created_at');
+                        $initialComments = $commentsSorted->take($commentLimit);
+                        $moreComments = $commentsSorted->skip($commentLimit);
+                        $moreCount = $moreComments->count();
+                    @endphp
+                    <h3 class="mb-2 text-sm font-semibold text-gray-800">Comments (<span id="comments-count-{{ $post->id }}">{{ $post->comments->count() }}</span>)</h3>
+                    <div id="comments-list-{{ $post->id }}" class="space-y-3">
+                            @foreach($initialComments as $comment)
+                                @php $isOwn = $comment->user_id === auth()->id(); @endphp
+                                <div class="flex {{ $isOwn ? 'justify-end' : 'justify-start' }}">
+                                    <div class="rounded-2xl border p-3 w-full {{ $isOwn ? 'border-indigo-200 bg-indigo-50/70' : 'border-gray-200 bg-white' }}">
+                                        <div class="text-xs {{ $isOwn ? 'text-indigo-600 font-medium' : 'text-gray-500' }}">
+                                            {{ $isOwn ? 'You' : ($comment->user->name ?? 'Unknown User') }} • {{ $comment->created_at?->diffForHumans() }}
+                                        </div>
+                                        <p class="mt-1 text-sm {{ $isOwn ? 'text-gray-800' : 'text-gray-700' }}">{{ $comment->body }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                            @if($moreCount > 0)
+                                <div id="comments-more-{{ $post->id }}" class="hidden space-y-3">
+                                    @foreach($moreComments as $comment)
+                                        @php $isOwn = $comment->user_id === auth()->id(); @endphp
+                                        <div class="flex {{ $isOwn ? 'justify-end' : 'justify-start' }}">
+                                            <div class="rounded-2xl border p-3 w-full {{ $isOwn ? 'border-indigo-200 bg-indigo-50/70' : 'border-gray-200 bg-white' }}">
+                                                <div class="text-xs {{ $isOwn ? 'text-indigo-600 font-medium' : 'text-gray-500' }}">
+                                                    {{ $isOwn ? 'You' : ($comment->user->name ?? 'Unknown User') }} • {{ $comment->created_at?->diffForHumans() }}
+                                                </div>
+                                                <p class="mt-1 text-sm {{ $isOwn ? 'text-gray-800' : 'text-gray-700' }}">{{ $comment->body }}</p>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <button type="button" onclick="toggleCommentsMore({{ $post->id }}, {{ $moreCount }})" id="comments-more-btn-{{ $post->id }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">
+                                    View more ({{ $moreCount }})
+                                </button>
+                            @endif
                     </div>
                 </div>
             </div>
@@ -188,15 +259,6 @@
         </div>
 
     </div>
-</x-app-layout>
 
-<script>
-function toggleComments(postId) {
-    const commentsSection = document.getElementById(`comments-${postId}`);
-    if (commentsSection.classList.contains('hidden')) {
-        commentsSection.classList.remove('hidden');
-    } else {
-        commentsSection.classList.add('hidden');
-    }
-}
-</script>
+    @vite(['resources/js/multimedia-index.js'])
+</x-app-layout>
