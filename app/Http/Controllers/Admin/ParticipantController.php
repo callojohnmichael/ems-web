@@ -100,10 +100,16 @@ class ParticipantController extends Controller
         // only allow adding committee members (enforced on store as well).
         $onlyCommittee = $event->status !== 'published' && !$isAdmin;
 
+        $existingEmployeeIds = $event->participants()->whereNotNull('employee_id')->pluck('employee_id')->unique()->all();
+        $existingUserIds = $event->participants()->whereNotNull('user_id')->pluck('user_id')->unique()->all();
+
         return view('admin.participants.create', [
             'event' => $event,
             'employees' => Employee::orderBy('last_name')->orderBy('first_name')->get(),
+            'users' => User::orderBy('name')->get(),
             'onlyCommittee' => $onlyCommittee,
+            'existingEmployeeIds' => $existingEmployeeIds,
+            'existingUserIds' => $existingUserIds,
         ]);
     }
 

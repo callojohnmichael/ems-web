@@ -30,17 +30,35 @@
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Searchable User Selection --}}
+                    {{-- Searchable employee or user selection --}}
                     <div class="md:col-span-2">
-                        <label for="employee_id" class="block text-sm font-medium text-gray-900">Search Employee</label>
-                        <select name="employee_id" id="employee_id" placeholder="Start typing a name or email..." autocomplete="off">
-                            <option value="">-- Manual Entry (Not an employee) --</option>
+                        <label for="participant_lookup" class="block text-sm font-medium text-gray-900">Search employee or user</label>
+                        <input type="hidden" name="employee_id" id="employee_id" value="{{ old('employee_id') }}">
+                        <input type="hidden" name="user_id" id="user_id" value="{{ old('user_id') }}">
+                        <select id="participant_lookup" placeholder="Start typing a name or email..." autocomplete="off">
+                            <option value="">-- Manual Entry (Not an employee/user) --</option>
                             @foreach($employees as $emp)
-                                <option value="{{ $emp->id }}" 
-                                        data-name="{{ $emp->full_name }}" 
+                                @php
+                                    $alreadyOnEvent = in_array($emp->id, $existingEmployeeIds ?? []);
+                                @endphp
+                                <option value="employee:{{ $emp->id }}"
+                                        data-name="{{ $emp->full_name }}"
                                         data-email="{{ $emp->email ?? '' }}"
-                                        {{ old('employee_id') == $emp->id ? 'selected' : '' }}>
-                                    {{ $emp->full_name }} {{ $emp->email ? '(' . $emp->email . ')' : '' }}
+                                        @if($alreadyOnEvent) disabled @endif
+                                        @if(old('employee_id') == (string)$emp->id) selected @endif>
+                                    {{ $emp->full_name }}{{ $emp->email ? ' (' . $emp->email . ')' : '' }}{{ $alreadyOnEvent ? ' (Already on the event)' : '' }}
+                                </option>
+                            @endforeach
+                            @foreach($users as $u)
+                                @php
+                                    $alreadyOnEvent = in_array($u->id, $existingUserIds ?? []);
+                                @endphp
+                                <option value="user:{{ $u->id }}"
+                                        data-name="{{ $u->name }}"
+                                        data-email="{{ $u->email }}"
+                                        @if($alreadyOnEvent) disabled @endif
+                                        @if(old('user_id') == (string)$u->id) selected @endif>
+                                    {{ $u->name }} ({{ $u->email }}){{ $alreadyOnEvent ? ' (Already on the event)' : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -112,26 +130,46 @@
     {{-- Initialization Script --}}
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // Initialize Searchable Dropdown for employees
-            const empSelect = new TomSelect("#employee_id", {
+            const lookupSelect = new TomSelect("#participant_lookup", {
                 create: false,
                 sortField: { field: "text", direction: "asc" }
             });
 
             const nameInput = document.getElementById('name');
             const emailInput = document.getElementById('email');
+            const employeeIdInput = document.getElementById('employee_id');
+            const userIdInput = document.getElementById('user_id');
 
-            // Handle Auto-fill
-            empSelect.on('change', function(value) {
-                const originalOption = document.querySelector(`#employee_id option[value="${value}"]`);
+            function applyLookup(value) {
+                if (!value) {
+                    employeeIdInput.value = '';
+                    userIdInput.value = '';
+                    nameInput.value = '';
+                    emailInput.value = '';
+                    return;
+                }
+                const originalOption = document.querySelector(`#participant_lookup option[value="${value}"]`);
                 if (originalOption) {
                     nameInput.value = originalOption.dataset.name || '';
                     emailInput.value = originalOption.dataset.email || '';
+                    if (value.startsWith('employee:')) {
+                        employeeIdInput.value = value.slice(9);
+                        userIdInput.value = '';
+                    } else if (value.startsWith('user:')) {
+                        userIdInput.value = value.slice(5);
+                        employeeIdInput.value = '';
+                    }
                 } else {
+                    employeeIdInput.value = '';
+                    userIdInput.value = '';
                     nameInput.value = '';
                     emailInput.value = '';
                 }
-            });
+            }
+
+            lookupSelect.on('change', applyLookup);
+            var initialVal = lookupSelect.getValue();
+            if (initialVal) applyLookup(initialVal);
         });
     </script>
 
