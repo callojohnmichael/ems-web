@@ -222,7 +222,7 @@
                         </a>
                         
                         @if(auth()->user()->isAdmin())
-                            @if($event->status === 'pending_approvals')
+                            @if($event->status === 'pending_approvals' && $canApproveEvent)
                                 <form action="{{ route('events.approve', $event) }}" method="POST" class="inline">
                                     @csrf
                                     <button type="submit" 
@@ -231,7 +231,7 @@
                                     </button>
                                 </form>
                             @endif
-                            
+
                             @if($event->status === 'approved')
                                 <form action="{{ route('events.publish', $event) }}" method="POST" class="inline">
                                     @csrf
